@@ -301,8 +301,8 @@ MonoBehaviour:
   snapStiffness: 2
   carryStiffness: 15
   spawnRate: 10
-  beesPerResource: 1000
-  startResourceCount: 1
+  beesPerResource: 5
+  startResourceCount: 100
 --- !u!4 &129398392
 Transform:
   m_ObjectHideFlags: 0
@@ -462,7 +462,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 5.669922, y: -5.529999}
+  m_AnchoredPosition: {x: 5.669922, y: -5.5300293}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &669731901
