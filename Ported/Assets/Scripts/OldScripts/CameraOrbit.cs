@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//This class just allows us to rotate the camera around the playing field while it is also locked to the middle
 public class CameraOrbit : MonoBehaviour {
 	public float sensitivity;
 	public float zoomSensitivity;
