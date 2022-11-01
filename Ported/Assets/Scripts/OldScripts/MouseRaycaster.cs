@@ -11,6 +11,7 @@ public class MouseRaycaster : MonoBehaviour {
 	new Camera camera;
 	Transform marker;
 
+	//Creates a small sphere we can render in the game at mouse position
 	void Start () {
 		marker = GameObject.CreatePrimitive(PrimitiveType.Sphere).transform;
 		marker.gameObject.name = "Mouse Raycast Marker";
@@ -19,8 +20,10 @@ public class MouseRaycaster : MonoBehaviour {
 	}
 	
 	void LateUpdate () {
+		//makes a ray from screenposition from where the mouse is
 		Ray mouseRay = camera.ScreenPointToRay(Input.mousePosition);
 
+		//Lots of math to check if the mouse is within the field, and which wall it can count as a hit (depends on which direction the camera is facing)
 		isMouseTouchingField = false;
 		for (int i=0;i<3;i++) {
 			for (int j=-1;j<=1;j+=2) {
@@ -51,6 +54,8 @@ public class MouseRaycaster : MonoBehaviour {
 			}
 		}
 
+		//If the mouse is within the field we render the small sphere at the position the mouse is at
+		//If not then we don't render the small sphere
 		if (isMouseTouchingField) {
 			marker.position = worldMousePosition;
 			if (marker.gameObject.activeSelf == false) {

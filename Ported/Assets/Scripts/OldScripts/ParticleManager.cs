@@ -24,12 +24,14 @@ public class ParticleManager : MonoBehaviour {
 
 	MaterialPropertyBlock matProps;
 
+	//Where, what type and what velocity is the particle created with
 	public static void SpawnParticle(Vector3 position,ParticleType type,Vector3 velocity,float velocityJitter=6f,int count=1) {
 		for (int i = 0; i < count; i++) {
 			instance._SpawnParticle(position,type,velocity,velocityJitter);
 		}
 	}
 	void _SpawnParticle(Vector3 position, ParticleType type, Vector3 velocity, float velocityJitter) {
+		//Ensures theres never more than a maximum amount of particles at hte same time
 		if (particles.Count==maxParticleCount) {
 			return;
 		}
@@ -45,11 +47,13 @@ public class ParticleManager : MonoBehaviour {
 		particle.type = type;
 		particle.position = position;
 		particle.life = 1f;
+		//If the particle to be creates is blood
 		if (type==ParticleType.Blood) {
 			particle.velocity = velocity+ Random.insideUnitSphere * velocityJitter;
 			particle.lifeDuration = Random.Range(3f,5f);
 			particle.size = Vector3.one*Random.Range(.1f,.2f);
 			particle.color = Random.ColorHSV(-.05f,.05f,.75f,1f,.3f,.8f);
+		//If the particle to be created is a spawn flash
 		} else if (type==ParticleType.SpawnFlash) {
 			particle.velocity = Random.insideUnitSphere * 5f;
 			particle.lifeDuration = Random.Range(.25f,.5f);
@@ -70,6 +74,7 @@ public class ParticleManager : MonoBehaviour {
 		activeBatchSize++;
 	}
 
+	//Sets up the manager and initialises all lists etc
 	private void Awake() {
 		instance = this;
 
@@ -87,6 +92,8 @@ public class ParticleManager : MonoBehaviour {
 		matProps.SetVectorArray("_Color",new Vector4[instancesPerBatch]);
 	}
 	
+	//Checks if the particles are within the playing field, and if they are supposed to despawn because they've been there long enough
+	//loops through every single particle
 	void FixedUpdate () {
 		float deltaTime = Time.deltaTime;
 		for (int i=0;i<particles.Count;i++) {
