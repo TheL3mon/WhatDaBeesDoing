@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -12,11 +13,13 @@ public partial class BeeSpawnerSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        if (beesToSpawn > 0)
+        var ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+
+        var spawnJob = new BeeSpawnJob
         {
-            new BeeSpawnJob().Run();
-            beesToSpawn--;
-        }
+            ecb = ecb
+        }.Schedule();
     }
 }
 
