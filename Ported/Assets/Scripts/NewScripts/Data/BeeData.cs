@@ -4,7 +4,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
-[GenerateAuthoringComponent]
 public struct BeeData :  IComponentData
 {
     public float3 position;
