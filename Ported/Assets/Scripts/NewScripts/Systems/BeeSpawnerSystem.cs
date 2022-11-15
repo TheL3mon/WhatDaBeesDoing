@@ -18,6 +18,8 @@ public partial class BeeSpawnerSystem : SystemBase
     public int spawnMax = 10;
     public int spawnCounter = 0;
 
+    public Mesh BeeMesh;
+
     protected override void OnCreate()
     {
         base.OnCreate();
@@ -32,7 +34,7 @@ public partial class BeeSpawnerSystem : SystemBase
         var ecb = new EntityCommandBuffer(Allocator.TempJob);
         var pos = new Translation() { Value = new float3(0, 0, 0) };
         var team = 0;
-        var beeData = new BeeData();
+        var beeData = new BeeDataOld();
 
         var spawnJob = new BeeSpawnJob
         {
@@ -40,6 +42,7 @@ public partial class BeeSpawnerSystem : SystemBase
             team = team,
             beeData = beeData
         };
+        
 
         spawnJob.Schedule();
 
@@ -57,9 +60,9 @@ public partial struct BeeSpawnJob : IJobEntity
 {
     public EntityCommandBuffer ecb;
     public int team;
-    public BeeData beeData;
+    public BeeDataOld beeData;
 
-    public void Execute(Entity spawnEntity, ref BeeSpawnData beeSpawnData)
+    public void Execute(Entity spawnEntity, ref BeeSpawnDataOld beeSpawnData)
     {
         ecb.DestroyEntity(spawnEntity);
         Debug.Log("spawned bee!");

@@ -4,8 +4,7 @@ using Unity.Entities;
 using UnityEngine;
 
 [GenerateAuthoringComponent]
-public partial struct BeeSpawnData : IComponentData
+public struct ResourceData : IComponentData
 {
-    public int initialSpawnPerTeam;
-    public int spawnPerAction;
+    public int beesPerResource;
 }

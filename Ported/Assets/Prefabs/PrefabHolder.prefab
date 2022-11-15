@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &3346073098161235703
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3346073098161235698}
+  - component: {fileID: 3346073098161235701}
+  - component: {fileID: 3346073098161235700}
+  - component: {fileID: 3346073098161235699}
+  m_Layer: 0
+  m_Name: PrefabHolder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3346073098161235698
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3346073098161235703}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -25, y: 3, z: -25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3346073098161235701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3346073098161235703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9a8499db6637284798499fb354f5ef1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blueBee: {fileID: 7298432908592043902, guid: 0505cdad8ceaf76468fba890932e4803, type: 3}
+  yellowBee: {fileID: 1081047938504222905, guid: 614b59c8a07bd19499890c211e86df27, type: 3}
+  mouseMarker: {fileID: 6931951543517864974, guid: 4fd619af8ed76264994370124c58e361, type: 3}
+  resource: {fileID: 4541261722352603875, guid: 0d3556fdb1af7cc4e9c66e6ec8599ec6, type: 3}
+--- !u!114 &3346073098161235700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3346073098161235703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 586effd2917b9544a8632e65a6d08431, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  initialSpawnPerTeam: 10
+  spawnPerAction: 10
+--- !u!114 &3346073098161235699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3346073098161235703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b7fe0b24b7abd44a868cebe546575d3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  beesPerResource: 5
