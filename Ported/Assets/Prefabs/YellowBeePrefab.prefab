@@ -125,8 +125,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   team: 1
-  flightJitter: 50
-  teamAttraction: 50
+  flightJitter: 200
+  teamAttraction: 5
+  teamRepulsion: 4
+  damping: 0.1
 --- !u!114 &7992802162242733060
 MonoBehaviour:
   m_ObjectHideFlags: 0

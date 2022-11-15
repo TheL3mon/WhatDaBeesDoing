@@ -9,6 +9,7 @@ using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 using Random = UnityEngine.Random;
 
 public partial class BeeMovementSystem : SystemBase
@@ -27,38 +28,71 @@ public partial class BeeMovementSystem : SystemBase
         var deltaTime = Time.DeltaTime;
 
         var blueTeamEntities = _blueTeamQuery.ToEntityArray(Allocator.Temp);
-        var randBlueTeamMember = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
-        var randBlueTeamMemeberPos = GetComponent<Translation>(randBlueTeamMember);
-
-        var yellowTeamEntities = _yellowTeamQuery.ToEntityArray(Allocator.Temp);
-        var randYellowTeamMember = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
-        var randYellowTeamMemeberPos = GetComponent<Translation>(randYellowTeamMember);
 
         Entities
             .WithStoreEntityQueryInField(ref _blueTeamQuery)
-            .WithAll<BlueTeamTag>().ForEach((ref Translation translation, ref PhysicsVelocity velocity, in BeeData beeData)
+            .WithAll<BlueTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, in BeeData beeData)
         =>{
             velocity.Linear += (float3) Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
+            velocity.Linear *= (1f - beeData.damping);
 
-            var delta = randBlueTeamMemeberPos.Value - translation.Value;
-            var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-            if(dist > 0f)
+            var beePos = GetComponent<Translation>(e);
+
+            var BlueRandomAttractorBee = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
+            var blueAttractorBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
+
+            var deltaAttract = blueAttractorBeePos.Value - beePos.Value;
+            var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
+            
+            if(distAttract > 0f)
             {
-                velocity.Linear += delta * (beeData.teamAttraction * deltaTime / dist);
+                velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
             }
-        }).Run();
 
-        Entities
-            .WithStoreEntityQueryInField(ref _yellowTeamQuery)
-            .WithAll<YellowTeamTag>().ForEach((ref Translation translation, ref PhysicsVelocity velocity, ref BeeData beeData)
-        => {
-            velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
-
-            var delta = randYellowTeamMemeberPos.Value - translation.Value;
+            var BlueRandomRepellerBee = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
+            var blueRepellerBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
+            
+            var delta = blueRepellerBeePos.Value - beePos.Value;
             var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
             if (dist > 0f)
             {
-                velocity.Linear += delta * (beeData.teamAttraction * deltaTime / dist);
+                velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
+            }
+
+        }).Run();
+
+
+        var yellowTeamEntities = _yellowTeamQuery.ToEntityArray(Allocator.Temp);
+
+
+        Entities
+        .WithStoreEntityQueryInField(ref _yellowTeamQuery)
+            .WithAll<YellowTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, ref BeeData beeData)
+        => {
+            velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
+            velocity.Linear *= (1f - beeData.damping);
+
+            var beePos = GetComponent<Translation>(e);
+
+            var yelloeRandomAttractor = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
+            var yellowRandomAttractorPos = GetComponent<Translation>(yelloeRandomAttractor);
+
+            var deltaAttract = yellowRandomAttractorPos.Value - beePos.Value;
+            var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
+            if (distAttract > 0f)
+            {
+                velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
+            }
+
+
+            var yellowRandomRepeller = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
+            var yellowRandomRepellerPos = GetComponent<Translation>(yellowRandomRepeller);
+
+            var delta = yellowRandomRepellerPos.Value - beePos.Value;
+            var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+            if (dist > 0f)
+            {
+                velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
             }
         }).Run();
     }

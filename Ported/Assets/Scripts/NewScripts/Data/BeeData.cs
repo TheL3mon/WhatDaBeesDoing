@@ -9,4 +9,6 @@ public struct BeeData : IComponentData
     public int team;
     public float flightJitter;
     public float teamAttraction;
+    public float teamRepulsion;
+    public float damping;
 }
