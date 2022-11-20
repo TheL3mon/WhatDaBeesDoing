@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Resource {
+public class ResourceClassOld
+{
 	public Vector3 position;
 	public bool stacked;
 	public int stackIndex;
@@ -12,7 +13,7 @@ public class Resource {
 	public Vector3 velocity;
 	public bool dead;
 
-	public Resource(Vector3 myPosition) {
+	public ResourceClassOld(Vector3 myPosition) {
 		position = myPosition;
 	}
 }
