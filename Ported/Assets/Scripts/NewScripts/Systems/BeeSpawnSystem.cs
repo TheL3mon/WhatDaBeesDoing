@@ -6,12 +6,15 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
+using static UnityEngine.Rendering.DebugUI;
+using System;
 
 public partial class BeeSpawnSystem : SystemBase
 {
 
     private Entity _blueTeamPrefab;
     private Entity _yellowTeamPrefab;
+    private Entity _resourcePrefab;
     private EntityCommandBuffer _ecb;
     private float3 minPos = new float3(-50, 10, -50);
     private float3 maxPos = new float3(50, 10, 50);
@@ -24,6 +27,8 @@ public partial class BeeSpawnSystem : SystemBase
     {
         _blueTeamPrefab = GetSingleton<BeePrefabs>().blueBee;
         _yellowTeamPrefab = GetSingleton<BeePrefabs>().yellowBee;
+        _resourcePrefab = GetSingleton<BeePrefabs>().resource;
+        //_fieldPrefab = GetSingleton<BeePrefabs>().resource;
         //_ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         _random.InitState(4554);
         _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -44,8 +49,16 @@ public partial class BeeSpawnSystem : SystemBase
             position = zero
         }.Schedule();
 
+        var intialResourceSpawns = new SpawnJobResource
+        {
+            ecb = _ecb,
+            resourcePrefab = _resourcePrefab,
+            position = zero
+        }.Schedule();
+
         initialBlueSpawns.Complete();
         initialYellowSpawns.Complete();
+        intialResourceSpawns.Complete();
         _ecb.Playback(EntityManager);
 
     }
@@ -100,6 +113,22 @@ public partial class BeeSpawnSystem : SystemBase
             ecb.Dispose();
             //Enabled = false;
         }
+
+        // Spawn resources
+        var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        var resourceSpawn = new SpawnJobResource
+        {
+            ecb = ecb2,
+            resourcePrefab = _resourcePrefab,
+            position = zero
+        }.Schedule();
+        resourceSpawn.Complete();
+        ecb2.Playback(EntityManager);
+        ecb2.Dispose();
+
+        //_ecb.Playback(EntityManager);
+
+
     }
 }
 
@@ -164,5 +193,71 @@ public partial struct SpawnJob : IJobEntity
             ecb.SetComponent(newBee, newTranslation);
 
         }
+    }
+}
+
+[BurstCompile]
+public partial struct SpawnJobResource : IJobEntity
+{
+    public EntityCommandBuffer ecb;
+    public Entity resourcePrefab;
+    public ResourceData resourceData;
+    public float3 position;
+    //public FieldData fieldData;
+    public Random random;
+    //public int beesToSpawn;
+
+    void Execute(Entity spawnEntity, ref ResourceSpawnData resourceSpawnData)
+    {
+        Debug.Log("Spawned resource");
+        var resourceEntity = ecb.Instantiate(resourcePrefab);
+
+        /*
+        ecb.AddComponent(resourceEntity, new Translation
+        {
+            Value = position
+        }
+        );
+        */
+
+        ecb.SetComponent(resourceEntity, new Translation
+        {
+            Value = position
+        }
+        );
+
+        //Pass data from spawnData to resourceData or generate data for resource
+
+        var resource = GetResource();
+
+        //ecb.AddComponent(resourceEntity, resource);
+
+        //this.fieldData = fieldData;
+
+        //ecb.SetComponent(resourceEntity, resourceData);
+
+
+        ecb.DestroyEntity(spawnEntity); //Should be cached
+    }
+
+    float3 calculatePosition()
+    {
+        //return null;
+        var rd = resourceData;
+        //var 
+
+        //var size_x = 10.0f;
+        //var size_x = 10.0f;
+
+        //float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * fieldData.size.x * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * fieldData.size.z);
+        float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * 1.0f * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * 1.0f);
+        return pos;
+    }
+
+    Resource GetResource()
+    {
+        var resource = new Resource();
+        //resource.position = calculatePosition();
+        return resource;
     }
 }

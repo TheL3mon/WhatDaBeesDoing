@@ -16,7 +16,10 @@ public partial class ResourceSystem : SystemBase
 
     protected override void OnUpdate()
     {
+
     }
+
+
 
 
     //public Resource TryGetRandomResource(ref ResourceData resourceData)

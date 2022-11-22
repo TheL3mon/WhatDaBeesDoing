@@ -7,28 +7,28 @@ using UnityEngine;
 [GenerateAuthoringComponent]
 public struct ResourceData : IComponentData
 {
- //   public int beesPerResource;
+	public int beesPerResource;
 
 	//public Mesh resourceMesh;
 	//public Material resourceMaterial;
-	//public float resourceSize;
-	//public float snapStiffness;
-	//public float carryStiffness;
-	//public float spawnRate; // 0.1f
-	//[Space(10)]
-	//public int startResourceCount;
+	public float resourceSize;
+	public float snapStiffness;
+	public float carryStiffness;
+	public float spawnRate; // 0.1f
+							//[Space(10)]
+	public int startResourceCount;
 
 	//public List<Resource> resources;
 	//public List<Matrix4x4> matrices;
-	//public int2 gridCounts;
-	//public float2 gridSize;
-	//public float2 minGridPos;
+	public int2 gridCounts;
+	public float2 gridSize;
+	public float2 minGridPos;
 
-	//public int[,] stackHeights;
+	//public int2[] stackHeights;
 
-	//float spawnTimer; // 0
+	public float spawnTimer; // 0
 
-	//public static ResourceManager instance;
+	//public static ResourceSystem instance;
 }
 
 public struct Resource : IComponentData
