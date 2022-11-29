@@ -228,7 +228,7 @@ public partial struct SpawnJobResource : IJobEntity
 
         //Pass data from spawnData to resourceData or generate data for resource
 
-        var resource = GetResource();
+        //var resource = GetResource();
 
         //ecb.AddComponent(resourceEntity, resource);
 
