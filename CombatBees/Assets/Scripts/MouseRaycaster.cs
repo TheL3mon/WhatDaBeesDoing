@@ -26,6 +26,7 @@ public class MouseRaycaster : MonoBehaviour {
 			for (int j=-1;j<=1;j+=2) {
 				Vector3 wallCenter = new Vector3();
 				wallCenter[i] = Field.size[i] * .5f*j;
+				Debug.Log(wallCenter);
 				Plane plane = new Plane(-wallCenter,wallCenter);
 				float hitDistance;
 				if (Vector3.Dot(plane.normal,mouseRay.direction) < 0f) {
@@ -34,6 +35,7 @@ public class MouseRaycaster : MonoBehaviour {
 						bool insideField = true;
 						for (int k = 0; k < 3; k++) {
 							if (Mathf.Abs(hitPoint[k]) > Field.size[k] * .5f+.01f) {
+								Debug.Log("Not inside field");
 								insideField = false;
 								break;
 							}
