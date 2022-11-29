@@ -15,6 +15,7 @@ public partial class BeeSpawnSystem : SystemBase
     private Entity _blueTeamPrefab;
     private Entity _yellowTeamPrefab;
     private Entity _resourcePrefab;
+    private FieldData _fieldData;
     private ResourceData _resourceData;
     private EntityCommandBuffer _ecb;
     private float3 minPos = new float3(-50, 10, -50);
@@ -30,6 +31,7 @@ public partial class BeeSpawnSystem : SystemBase
         _yellowTeamPrefab = GetSingleton<BeePrefabs>().yellowBee;
         _resourcePrefab = GetSingleton<BeePrefabs>().resource;
         _resourceData = GetSingleton<ResourceData>();
+        _fieldData = GetSingleton<FieldData>();
 
         //_fieldData.
         //_fieldPrefab = GetSingleton<BeePrefabs>().resource;
@@ -58,7 +60,9 @@ public partial class BeeSpawnSystem : SystemBase
             ecb = _ecb,
             resourcePrefab = _resourcePrefab,
             position = zero,
-            resourceData = _resourceData
+            resourceData = _resourceData,
+            fieldData = _fieldData,
+            random = _random
         }.Schedule();
 
         initialBlueSpawns.Complete();
@@ -125,8 +129,10 @@ public partial class BeeSpawnSystem : SystemBase
         {
             ecb = ecb2,
             resourcePrefab = _resourcePrefab,
-            position = zero
-        }.Schedule();
+            resourceData = _resourceData,
+            fieldData = _fieldData,
+            position = _random.NextFloat3(minPos, maxPos)
+    }.Schedule();
         resourceSpawn.Complete();
         ecb2.Playback(EntityManager);
         ecb2.Dispose();
@@ -208,7 +214,7 @@ public partial struct SpawnJobResource : IJobEntity
     public Entity resourcePrefab;
     public ResourceData resourceData;
     public float3 position;
-    //public FieldData fieldData;
+    public FieldData fieldData;
     public Random random;
     //public int beesToSpawn;
 
@@ -232,13 +238,15 @@ public partial struct SpawnJobResource : IJobEntity
 
         ecb.SetComponent(resourceEntity, new Translation
         {
-            Value = position
+            Value = calculatePosition()
         }
         );
 
         //Pass data from spawnData to resourceData or generate data for resource
 
         //var resource = GetResource();
+
+
 
         //ecb.AddComponent(resourceEntity, resource);
 
@@ -259,15 +267,15 @@ public partial struct SpawnJobResource : IJobEntity
         //var size_x = 10.0f;
         //var size_x = 10.0f;
 
-        //float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * fieldData.size.x * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * fieldData.size.z);
-        float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * 1.0f * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * 1.0f);
+        float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * fieldData.size.x * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * fieldData.size.z);
+        //float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * 1.0f * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * 1.0f);
         return pos;
     }
 
     Resource GetResource()
     {
         var resource = new Resource();
-        //resource.position = calculatePosition();
+        resource.position = calculatePosition();
         return resource;
     }
 }
