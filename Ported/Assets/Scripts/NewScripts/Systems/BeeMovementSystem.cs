@@ -28,11 +28,23 @@ public partial class BeeMovementSystem : SystemBase
         var deltaTime = Time.DeltaTime;
 
         var blueTeamEntities = _blueTeamQuery.ToEntityArray(Allocator.Temp);
+        var positions = GetComponentDataFromEntity<Translation>(true);
+        var allBlueBees = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
+        //var nativearr = allBlueBees.ToEntityArray(Allocator.TempJob);
+
+        //Dynamic buffers is an option
+
+
+        //var position = positions[nativearr[0]];
+        //.WithReadOnly(positions)
 
         Entities
             .WithStoreEntityQueryInField(ref _blueTeamQuery)
             .WithAll<BlueTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, in BeeData beeData)
         =>{
+
+
+
             velocity.Linear += (float3) Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
             velocity.Linear *= (1f - beeData.damping);
 
