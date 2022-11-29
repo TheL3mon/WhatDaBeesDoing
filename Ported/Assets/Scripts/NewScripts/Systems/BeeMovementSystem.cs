@@ -18,21 +18,26 @@ public partial class BeeMovementSystem : SystemBase
     private EntityQuery _blueTeamQuery;
     private EntityQuery _yellowTeamQuery;
 
-    BeeData beeData;
+    //public BeeData beeData = new BeeData();
 
     protected override void OnStartRunning()
     {
         //bees = new List<Bee>(50000);
         //teamsOfBees = new List<Bee>[2];
         //pooledBees = new List<Bee>(50000);
+        //var bpb = 1;
 
-        beeData.beeMatrices = new List<List<Matrix4x4>>();
-        beeData.beeMatrices.Add(new List<Matrix4x4>());
-        beeData.beeColors = new List<List<Vector4>>();
-        beeData.beeColors.Add(new List<Vector4>());
+        int beesPerBatch = 1023;
 
-        beeData.matProps = new MaterialPropertyBlock();
-        beeData.matProps.SetVectorArray("_Color", new float4x4[beesPerBatch]);
+        //beeData.beeMatrices = new List<List<Matrix4x4>>();
+        //beeData.beeMatrices.Add(new List<Matrix4x4>());
+        //beeData.beeColors = new List<List<Vector4>>();
+        //beeData.beeColors.Add(new List<Vector4>());
+
+        //beeData.matProps = new MaterialPropertyBlock();
+        ////beeData.matProps.SetVectorArray("_Color", new float4x4[BeeData.beesPerBatch]);
+        ////beeData.matProps.SetMatrix("_Color", new Matrix4x4[BeeData.beesPerBatch]);
+        //beeData.matProps.SetMatrixArray("_Color", new Matrix4x4[beesPerBatch]);
 
         /*
         for (int i=0;i<2;i++) {

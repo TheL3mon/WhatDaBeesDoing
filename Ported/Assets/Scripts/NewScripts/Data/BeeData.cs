@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
@@ -8,7 +9,6 @@ using UnityEngine;
 [GenerateAuthoringComponent]
 public struct BeeData : IComponentData
 {
-    public int team;
     public float flightJitter;
     public float teamAttraction;
     public float teamRepulsion;
@@ -16,9 +16,9 @@ public struct BeeData : IComponentData
 
 
     // NOT TESTED/CONVERTED VVVVV
-    public MeshRenderer beeMesh;
-    public Material beeMaterial;
-    public URPMaterialPropertyBaseColor[] teamColors;
+    //public MeshRenderer beeMesh;
+    //public Material beeMaterial;
+    //public URPMaterialPropertyBaseColor[] teamColors;
     public float minBeeSize;
     public float maxBeeSize;
     public float speedStretch;
@@ -38,14 +38,15 @@ public struct BeeData : IComponentData
     //List<Bee>[] teamsOfBees;
     //List<Bee> pooledBees;
 
-    //int activeBatch = 0;
-    public List<List<Matrix4x4>> beeMatrices;
-    public List<List<Vector4>> beeColors;
 
-    //static BeeManager instance;
 
-    const int beesPerBatch = 1023;
-    public MaterialPropertyBlock matProps;
+    //public List<List<Vector4>> beeColors;
+
+    ////static BeeManager instance;
+
+    //public int beesPerBatch;
+    //public MaterialPropertyBlock matProps;
+
     // THIS IS HOW WE'RE GONNA PASS THE COLOR IN BeeManager AND ParticleManager VVVVV
     // OR WE COULD USE URPMaterialPropertyBaseColor
     /*
@@ -72,9 +73,26 @@ public struct BeeData : IComponentData
     .WithBurst().ScheduleParallel();
     */
 
-    [MaterialProperty("_Color", MaterialPropertyFormat.Float4x4)]
-    public struct ColorMaterialProperty : IComponentData
-    {
-        public float4x4 Value;
-    }
+    //[MaterialProperty("_Color", MaterialPropertyFormat.Float4x4)]
+    //public struct ColorMaterialProperty : IComponentData
+    //{
+    //    public float4x4 Value;
+    //}
+}
+
+public struct Bee : IComponentData
+{
+    public Entity enemyTarget;
+    public Entity resourceTarget;
+
+    public bool dead;
+    public float deathTimer;
+
+    public bool isAttacking;
+    public bool isHoldingResource;
+
+    public Matrix4x4 beeMatrix; //Matrix that is used for transforming the bee.
+    //FIXME In original version they use batching, is necessary in our case? Is batching automatic in DOTS?
+
+    public float4 beeColor;
 }

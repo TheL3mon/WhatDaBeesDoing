@@ -15,6 +15,7 @@ public partial class BeeSpawnSystem : SystemBase
     private Entity _blueTeamPrefab;
     private Entity _yellowTeamPrefab;
     private Entity _resourcePrefab;
+    private ResourceData _resourceData;
     private EntityCommandBuffer _ecb;
     private float3 minPos = new float3(-50, 10, -50);
     private float3 maxPos = new float3(50, 10, 50);
@@ -28,6 +29,9 @@ public partial class BeeSpawnSystem : SystemBase
         _blueTeamPrefab = GetSingleton<BeePrefabs>().blueBee;
         _yellowTeamPrefab = GetSingleton<BeePrefabs>().yellowBee;
         _resourcePrefab = GetSingleton<BeePrefabs>().resource;
+        _resourceData = GetSingleton<ResourceData>();
+
+        //_fieldData.
         //_fieldPrefab = GetSingleton<BeePrefabs>().resource;
         //_ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         _random.InitState(4554);
@@ -53,7 +57,8 @@ public partial class BeeSpawnSystem : SystemBase
         {
             ecb = _ecb,
             resourcePrefab = _resourcePrefab,
-            position = zero
+            position = zero,
+            resourceData = _resourceData
         }.Schedule();
 
         initialBlueSpawns.Complete();
@@ -206,6 +211,11 @@ public partial struct SpawnJobResource : IJobEntity
     //public FieldData fieldData;
     public Random random;
     //public int beesToSpawn;
+
+    //void Execute(in ResourceSpawnData resourceSpawnData)
+    //{
+    //    Debug.Log("rd spawn");
+    //}
 
     void Execute(Entity spawnEntity, ref ResourceSpawnData resourceSpawnData)
     {
