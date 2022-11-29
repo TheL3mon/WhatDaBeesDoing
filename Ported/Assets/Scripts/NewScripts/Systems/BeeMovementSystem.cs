@@ -18,9 +18,32 @@ public partial class BeeMovementSystem : SystemBase
     private EntityQuery _blueTeamQuery;
     private EntityQuery _yellowTeamQuery;
 
+    BeeData beeData;
 
     protected override void OnStartRunning()
     {
+        //bees = new List<Bee>(50000);
+        //teamsOfBees = new List<Bee>[2];
+        //pooledBees = new List<Bee>(50000);
+
+        beeData.beeMatrices = new List<List<Matrix4x4>>();
+        beeData.beeMatrices.Add(new List<Matrix4x4>());
+        beeData.beeColors = new List<List<Vector4>>();
+        beeData.beeColors.Add(new List<Vector4>());
+
+        beeData.matProps = new MaterialPropertyBlock();
+        beeData.matProps.SetVectorArray("_Color", new float4x4[beesPerBatch]);
+
+        /*
+        for (int i=0;i<2;i++) {
+			teamsOfBees[i] = new List<Bee>(25000);
+		}
+		for (int i=0;i<startBeeCount;i++) {
+			int team = i%2;
+			SpawnBee(team);
+		}
+        */
+
     }
 
     protected override void OnUpdate()

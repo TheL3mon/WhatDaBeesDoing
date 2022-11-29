@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Rendering;
 using UnityEngine;
 
@@ -38,13 +39,13 @@ public struct BeeData : IComponentData
     //List<Bee> pooledBees;
 
     //int activeBatch = 0;
-    List<List<Matrix4x4>> beeMatrices;
-    List<List<Vector4>> beeColors;
+    public List<List<Matrix4x4>> beeMatrices;
+    public List<List<Vector4>> beeColors;
 
     //static BeeManager instance;
 
     const int beesPerBatch = 1023;
-    MaterialPropertyBlock matProps;
+    public MaterialPropertyBlock matProps;
     // THIS IS HOW WE'RE GONNA PASS THE COLOR IN BeeManager AND ParticleManager VVVVV
     // OR WE COULD USE URPMaterialPropertyBaseColor
     /*
@@ -70,4 +71,10 @@ public struct BeeData : IComponentData
     } )
     .WithBurst().ScheduleParallel();
     */
+
+    [MaterialProperty("_Color", MaterialPropertyFormat.Float4x4)]
+    public struct ColorMaterialProperty : IComponentData
+    {
+        public float4x4 Value;
+    }
 }
