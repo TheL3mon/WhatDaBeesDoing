@@ -100,11 +100,11 @@ public partial class MouseRayCastSystem : SystemBase
             Debug.Log("Spawn position = " + markerPos.Value);
             if (markerPos.Value.z == -15)
             {
-                markerPos.Value.z += 2;
+                markerPos.Value.z += 1;
             }
             else if (markerPos.Value.z == 15)
             {
-                markerPos.Value.z -= 2;
+                markerPos.Value.z -= 1;
             }
             if (markerPos.Value.y == -10)
             {
