@@ -15,7 +15,6 @@ public struct ParticleData : IComponentData
     //public List<BeeParticle> particles;
     //public Matrix4x4[][] matrices;
     //public Vector4[][] colors;
-    //public DynamicBuffer<DynamicBuffer<int>> dynamicShit;
 
     //public List<BeeParticle> pooledParticles;
 
@@ -33,4 +32,17 @@ public enum ParticleType
 {
     Blood,
     SpawnFlash
+}
+
+public struct BeeParticle
+{
+    public ParticleType type;
+    public float3 position;
+    public float3 velocity;
+    public float3 size;
+    public float life;
+    public float lifeDuration;
+    public float4 color;
+    public bool stuck;
+    public Matrix4x4 cachedMatrix;
 }

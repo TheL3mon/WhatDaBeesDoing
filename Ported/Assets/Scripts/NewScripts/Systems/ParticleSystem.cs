@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,10 +11,20 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using static Unity.Entities.EntityQueryBuilder;
 using static UnityEditor.PlayerSettings;
+using static UnityEngine.ParticleSystem;
 
 public partial class ParticleSystem : SystemBase
 {
+    float timer;
+
     public ParticleData _particleData;
+
+    // TEMPORARY - Remove and do it in ParticleData once we know how to do arrays
+    public List<BeeParticle> particles;
+    public Matrix4x4[][] matrices;
+    public Vector4[][] colors;
+    public List<BeeParticle> pooledParticles;
+    //
 
     protected override void OnCreate()
     {
@@ -28,12 +39,28 @@ public partial class ParticleSystem : SystemBase
         _particleData.activeBatchSize = 0;
         _particleData.instancesPerBatch = 1023;
         _particleData.maxParticleCount = 10 * _particleData.instancesPerBatch;
+
+        // OLD AWAKE()
+		particles = new List<BeeParticle>();
+		pooledParticles = new List<BeeParticle>();
+		matrices = new Matrix4x4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
+		colors = new Vector4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
+
+		matrices[0] = new Matrix4x4[_particleData.instancesPerBatch];
+		colors[0] = new Vector4[_particleData.instancesPerBatch];
+        _particleData.activeBatch = 0;
+        _particleData.activeBatchSize = 0;
+
+		//matProps = new MaterialPropertyBlock();
+		//matProps.SetVectorArray("_Color", new Vector4[instancesPerBatch]);
     }
 
     protected override void OnUpdate()
     {
-		// SPAWNFLASH test
-		if (Input.GetKeyDown(KeyCode.F))
+        timer += Time.DeltaTime;
+
+        // SPAWNFLASH test
+        if (Input.GetKeyDown(KeyCode.F))
 		{
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 			var spawnFlashSpawnJob = new ParticleSpawnJob
@@ -52,7 +79,59 @@ public partial class ParticleSystem : SystemBase
         }
 
 
+        // OLD UPDATE()
+        for (int j = 0; j <= _particleData.activeBatch; j++)
+        {
+            int batchSize = _particleData.instancesPerBatch;
+            if (j == _particleData.activeBatch)
+            {
+                batchSize = _particleData.activeBatchSize;
+            }
+            int batchOffset = j * _particleData.instancesPerBatch;
+            Matrix4x4[] batchMatrices = matrices[j];
+            Vector4[] batchColors = colors[j];
+            for (int i = 0; i < batchSize; i++)
+            {
+                BeeParticle particle = particles[i + batchOffset];
 
+                if (particle.stuck)
+                {
+                    batchMatrices[i] = particle.cachedMatrix;
+                }
+                else
+                {
+                    Quaternion rotation = Quaternion.identity;
+                    Vector3 scale = particle.size * particle.life;
+                    if (particle.type == ParticleType.Blood)
+                    {
+                        rotation = Quaternion.LookRotation(particle.velocity);
+                        //scale.z *= 1f + particle.velocity.magnitude * speedStretch;
+                    }
+                    batchMatrices[i] = Matrix4x4.TRS(particle.position, rotation, scale);
+                }
+
+                float4 color = particle.color;
+				color[3] = particle.life;
+                batchColors[i] = color;
+            }
+        }
+
+        //for (int i = 0; i <= _particleData.activeBatch; i++)
+        //{
+        //    int batchSize = _particleData.instancesPerBatch;
+        //    if (i == _particleData.activeBatch)
+        //    {
+        //        batchSize = _particleData.activeBatchSize;
+        //    }
+        //    if (batchSize > 0)
+        //    {
+        //        matProps.SetVectorArray("_Color", colors[i]);
+        //        Graphics.DrawMeshInstanced(particleMesh, 0, particleMaterial, matrices[i], batchSize, matProps);
+        //    }
+        //}
+
+
+        /*
             Entities.ForEach((ref Translation translation, in Rotation rotation) => {
             // Implement the work to perform for each entity here.
             // You should only access data that is local or that is a
@@ -63,6 +142,7 @@ public partial class ParticleSystem : SystemBase
             // For example,
             //     translation.Value += math.mul(rotation.Value, new float3(0, 0, 1)) * deltaTime;
         }).Schedule();
+		*/
     }
 
     [BurstCompile]
@@ -92,7 +172,6 @@ public partial class ParticleSystem : SystemBase
         }
     }
 
-
     /*
     FROM THE OLD SCRIPT (ParticleManager.cs)
     ########################################
@@ -102,6 +181,11 @@ public partial class ParticleSystem : SystemBase
 			instance._SpawnParticle(position,type,velocity,velocityJitter);
 		}
 	}
+
+	VVVVVVVVVVVVVVVVVVV
+	VVV WE ARE HERE VVV
+	VVVVVVVVVVVVVVVVVVV
+
 	void _SpawnParticle(Vector3 position, ParticleType type, Vector3 velocity, float velocityJitter) {
 		if (particles.Count==maxParticleCount) {
 			return;
@@ -210,6 +294,8 @@ public partial class ParticleSystem : SystemBase
 		}
 	}
 
+
+	// DONE
 	void Update() {
 		for (int j = 0; j <= activeBatch; j++) {
 			int batchSize = instancesPerBatch;
