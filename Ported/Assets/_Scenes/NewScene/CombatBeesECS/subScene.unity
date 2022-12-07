@@ -318,6 +318,7 @@ GameObject:
   - component: {fileID: 1469107531}
   - component: {fileID: 1469107530}
   - component: {fileID: 1469107533}
+  - component: {fileID: 1469107534}
   m_Layer: 0
   m_Name: Field Container
   m_TagString: Untagged
@@ -405,6 +406,19 @@ MonoBehaviour:
     y: 20
     z: 30
   gravity: -20
+--- !u!65 &1469107534
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1469107529}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 0, z: 1}
+  m_Center: {x: 0, y: -0.5000001, z: 0}
 --- !u!1001 &1834914707
 PrefabInstance:
   m_ObjectHideFlags: 0
