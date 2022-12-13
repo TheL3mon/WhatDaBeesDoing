@@ -76,6 +76,8 @@ public partial class BeeMovementSystem : SystemBase
         var beeStatus = GetComponentDataFromEntity<Bee>(true);
         var positions = GetComponentDataFromEntity<Translation>(false);
 
+        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+
         var testingJob = new targetingJob
         {
             blueTeam = blueArr,
@@ -84,15 +86,18 @@ public partial class BeeMovementSystem : SystemBase
             status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
+            manager = EntityManager,
+            ecb = ecb,
             random = _random
         }.Schedule();
         //Dynamic buffers is an option
 
         testingJob.Complete();
-
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
+        
+        ecb.Playback(World.EntityManager);
 
         //var position = positions[nativearr[0]];
         //.WithReadOnly(positions)
@@ -178,15 +183,15 @@ public partial struct beeMoveJob : IJobEntity
         
     }
 }
-
-
 public partial struct targetingJob :IJobEntity
 {
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
     public NativeArray<Entity> resources;
     public ComponentDataFromEntity<Translation> positions;
+    public EntityManager manager;
     public float dt;
+    public EntityCommandBuffer ecb;
 
     //Race conditions????+ only reading from this data
     [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> status;
@@ -203,8 +208,11 @@ public partial struct targetingJob :IJobEntity
                 {
                     if(random.NextFloat(1.0f) < beeData.aggression)
                     {
-                        var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
-                        bee.enemyTarget = randomyellow;
+                        if(yellowTeam.Length > 0)
+                        {
+                            var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
+                            bee.enemyTarget = randomyellow;
+                        }
                     } else
                     {
                         Debug.Log("Missing implementation for getting a resource");
@@ -224,7 +232,17 @@ public partial struct targetingJob :IJobEntity
                             velocity.Linear += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
                         } else
                         {
+                            bee.isAttacking = true;
                             velocity.Linear += delta * (beeData.attackForce * dt / Mathf.Sqrt(sqrDist));
+                            if (sqrDist < beeData.hitDistance * beeData.hitDistance)
+                            {
+                                                                
+                                //Spawn particles
+                                //velocity change
+
+                                ecb.AddComponent(bee.enemyTarget, new DeadTag());
+                                bee.enemyTarget = Entity.Null;
+                            }
                         }
                     }
                 }
