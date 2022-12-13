@@ -34,7 +34,7 @@ public enum ParticleType
     SpawnFlash
 }
 
-public struct BeeParticle
+public struct BeeParticle : IComponentData
 {
     public ParticleType type;
     public float3 position;

@@ -44,7 +44,7 @@ public partial class ParticleSystem : SystemBase
         _particleData.instancesPerBatch = 1023;
         _particleData.maxParticleCount = 10 * _particleData.instancesPerBatch;
 
-        // OLD AWAKE()
+        // ORIGINAL Awake()
 		//particles = new List<BeeParticle>();
         particles = new NativeArray<BeeParticle>(1000, Unity.Collections.Allocator.Persistent); // TODO: this should be dynamic, the size is temporary
 		
@@ -94,7 +94,7 @@ public partial class ParticleSystem : SystemBase
         }
 
 
-        // OLD UPDATE()
+        // ORIGINAL Update()
         for (int j = 0; j <= _particleData.activeBatch; j++)
         {
             int batchSize = _particleData.instancesPerBatch;
@@ -122,7 +122,7 @@ public partial class ParticleSystem : SystemBase
                     if (particle.type == ParticleType.Blood)
                     {
                         rotation = Quaternion.LookRotation(particle.velocity);
-                        //scale.z *= 1f + particle.velocity.magnitude * speedStretch;
+                        //scale.z *= 1f + particle.velocity.magnitude * speedStretch; // TODO: calculate magnitude differently
                     }
                     batchMatrices[i] = Matrix4x4.TRS(particle.position, rotation, scale);
                 }
@@ -133,22 +133,23 @@ public partial class ParticleSystem : SystemBase
             }
         }
 
-        //for (int i = 0; i <= _particleData.activeBatch; i++)
-        //{
-        //    int batchSize = _particleData.instancesPerBatch;
-        //    if (i == _particleData.activeBatch)
-        //    {
-        //        batchSize = _particleData.activeBatchSize;
-        //    }
-        //    if (batchSize > 0)
-        //    {
-        //        matProps.SetVectorArray("_Color", colors[i]);
-        //        Graphics.DrawMeshInstanced(particleMesh, 0, particleMaterial, matrices[i], batchSize, matProps);
-        //    }
-        //}
+		for (int i = 0; i <= _particleData.activeBatch; i++)
+		{
+			int batchSize = _particleData.instancesPerBatch;
+			if (i == _particleData.activeBatch)
+			{
+				batchSize = _particleData.activeBatchSize;
+			}
+			if (batchSize > 0)
+			{
+				// TODO: once we have materials working
+				//matProps.SetVectorArray("_Color", colors[i]);
+				//Graphics.DrawMeshInstanced(particleMesh, 0, particleMaterial, matrices[i], batchSize, matProps);
+			}
+		}
 
 
-        /*
+		/*
             Entities.ForEach((ref Translation translation, in Rotation rotation) => {
             // Implement the work to perform for each entity here.
             // You should only access data that is local or that is a
@@ -160,7 +161,7 @@ public partial class ParticleSystem : SystemBase
             //     translation.Value += math.mul(rotation.Value, new float3(0, 0, 1)) * deltaTime;
         }).Schedule();
 		*/
-    }
+	}
 
     [BurstCompile]
     public partial struct ParticleSpawnJob : IJobEntity
@@ -173,11 +174,24 @@ public partial class ParticleSystem : SystemBase
 		public float velocityJitter;
 		public int count;
 
-        void Execute(in ParticleData particleData)
+        void Execute(ref BeeParticle beeParticleData)
         {
+			// setting the data
+			beeParticleData.type = type;
+			beeParticleData.position = position;
+			beeParticleData.velocity = velocity;
+			beeParticleData.size = new float3(1,1,1); // test
+			beeParticleData.life = 0; //test
+			beeParticleData.lifeDuration = 10; //test
+            beeParticleData.color = new float4(1,1,1,0); //test
+			beeParticleData.stuck = false;
+			beeParticleData.cachedMatrix = new Matrix4x4(); //test
+			//
+
             for (int i = 0; i < count; i++)
             {
-                var newParticle = ecb.Instantiate(particle);
+
+				var newParticle = ecb.Instantiate(particle);
 
                 var newTranslation = new Translation
                 {
@@ -187,6 +201,49 @@ public partial class ParticleSystem : SystemBase
                 ecb.SetComponent(newParticle, newTranslation);
             }
         }
+
+        /*
+		void _SpawnParticle(Vector3 position, ParticleType type, Vector3 velocity, float velocityJitter) {
+			if (particles.Count==maxParticleCount) {
+				return;
+			}
+			BeeParticle particle;
+			if (pooledParticles.Count == 0) {
+				particle = new BeeParticle();
+			} else {
+				particle = pooledParticles[pooledParticles.Count - 1];
+				pooledParticles.RemoveAt(pooledParticles.Count - 1);
+
+				particle.stuck = false;
+			}
+			particle.type = type;
+			particle.position = position;
+			particle.life = 1f;
+			if (type==ParticleType.Blood) {
+				particle.velocity = velocity+ Random.insideUnitSphere * velocityJitter;
+				particle.lifeDuration = Random.Range(3f,5f);
+				particle.size = Vector3.one*Random.Range(.1f,.2f);
+				particle.color = Random.ColorHSV(-.05f,.05f,.75f,1f,.3f,.8f);
+			} else if (type==ParticleType.SpawnFlash) {
+				particle.velocity = Random.insideUnitSphere * 5f;
+				particle.lifeDuration = Random.Range(.25f,.5f);
+				particle.size = Vector3.one*Random.Range(1f,2f);
+				particle.color = Color.white;
+			}
+
+			particles.Add(particle);
+
+			if (activeBatchSize == instancesPerBatch) {
+				activeBatch++;
+				activeBatchSize = 0;
+				if (matrices[activeBatch]==null) {
+					matrices[activeBatch]=new Matrix4x4[instancesPerBatch];
+					colors[activeBatch]=new Vector4[instancesPerBatch];
+				}
+			}
+			activeBatchSize++;
+		} 
+		*/
     }
 
     /*
@@ -243,6 +300,11 @@ public partial class ParticleSystem : SystemBase
 		}
 		activeBatchSize++;
 	}
+
+
+	VVVVVVVVVVVVVVVVVVVVVVV
+	// DONE PORTING Awake()
+	VVVVVVVVVVVVVVVVVVVVVVV
 
 	private void Awake() {
 		instance = this;
@@ -311,8 +373,11 @@ public partial class ParticleSystem : SystemBase
 		}
 	}
 
+	
+	VVVVVVVVVVVVVVVVVVVVVVVV
+	// DONE PORTING Update()
+	VVVVVVVVVVVVVVVVVVVVVVVV
 
-	// DONE
 	void Update() {
 		for (int j = 0; j <= activeBatch; j++) {
 			int batchSize = instancesPerBatch;
