@@ -12,10 +12,10 @@ public struct ParticleData : IComponentData
     //public Material particleMaterial;
     public float speedStretch;
 
+    // MOVED TO ParticleSystem
     //public List<BeeParticle> particles;
     //public Matrix4x4[][] matrices;
     //public Vector4[][] colors;
-
     //public List<BeeParticle> pooledParticles;
 
     public int activeBatch; // = 0;

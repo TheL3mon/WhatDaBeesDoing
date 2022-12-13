@@ -20,10 +20,14 @@ public partial class ParticleSystem : SystemBase
     public ParticleData _particleData;
 
     // TEMPORARY - Remove and do it in ParticleData once we know how to do arrays
-    public List<BeeParticle> particles;
-    public Matrix4x4[][] matrices;
-    public Vector4[][] colors;
-    public List<BeeParticle> pooledParticles;
+    //public List<BeeParticle> particles;
+    public NativeArray<BeeParticle> particles;
+    //public Matrix4x4[][] matrices;
+    public NativeArray<NativeArray<Matrix4x4>> matrices;
+    //public Vector4[][] colors;
+    public NativeArray<NativeArray<float4>> colors;
+    //public List<BeeParticle> pooledParticles;
+    public NativeArray<BeeParticle> pooledParticles;
     //
 
     protected override void OnCreate()
@@ -41,13 +45,24 @@ public partial class ParticleSystem : SystemBase
         _particleData.maxParticleCount = 10 * _particleData.instancesPerBatch;
 
         // OLD AWAKE()
-		particles = new List<BeeParticle>();
-		pooledParticles = new List<BeeParticle>();
-		matrices = new Matrix4x4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
-		colors = new Vector4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
+		//particles = new List<BeeParticle>();
+        particles = new NativeArray<BeeParticle>(1000, Unity.Collections.Allocator.Persistent); // TODO: this should be dynamic, the size is temporary
+		
+		//pooledParticles = new List<BeeParticle>();
+        pooledParticles = new NativeArray<BeeParticle>(1000, Unity.Collections.Allocator.Persistent); // TODO: this should be dynamic, the size is temporary
 
-		matrices[0] = new Matrix4x4[_particleData.instancesPerBatch];
-		colors[0] = new Vector4[_particleData.instancesPerBatch];
+        //matrices = new Matrix4x4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
+        matrices = new NativeArray<NativeArray<Matrix4x4>>(_particleData.maxParticleCount / _particleData.instancesPerBatch + 1, Unity.Collections.Allocator.Persistent);
+		
+		//colors = new Vector4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
+        colors = new NativeArray<NativeArray<float4>>(_particleData.maxParticleCount / _particleData.instancesPerBatch + 1, Unity.Collections.Allocator.Persistent);
+
+        //matrices[0] = new Matrix4x4[_particleData.instancesPerBatch];
+        matrices[0] = new NativeArray<Matrix4x4>(_particleData.instancesPerBatch, Unity.Collections.Allocator.Persistent);
+        
+		//colors[0] = new Vector4[_particleData.instancesPerBatch];
+        colors[0] = new NativeArray<float4>(_particleData.instancesPerBatch, Unity.Collections.Allocator.Persistent);
+
         _particleData.activeBatch = 0;
         _particleData.activeBatchSize = 0;
 
@@ -88,8 +103,10 @@ public partial class ParticleSystem : SystemBase
                 batchSize = _particleData.activeBatchSize;
             }
             int batchOffset = j * _particleData.instancesPerBatch;
-            Matrix4x4[] batchMatrices = matrices[j];
-            Vector4[] batchColors = colors[j];
+            //Matrix4x4[] batchMatrices = matrices[j];
+            NativeArray<Matrix4x4> batchMatrices = matrices[j];
+            //Vector4[] batchColors = colors[j];
+            NativeArray<float4> batchColors = colors[j];
             for (int i = 0; i < batchSize; i++)
             {
                 BeeParticle particle = particles[i + batchOffset];
