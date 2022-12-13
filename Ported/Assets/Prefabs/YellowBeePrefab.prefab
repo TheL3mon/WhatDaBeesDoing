@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: -4896437283515101588}
   - component: {fileID: 7992802162242733060}
   - component: {fileID: -5464764625196045997}
+  - component: {fileID: 6978546073273119977}
   m_Layer: 0
   m_Name: YellowBeePrefab
   m_TagString: Untagged
@@ -95,7 +96,7 @@ CapsuleCollider:
   m_GameObject: {fileID: 1081047938504222905}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   m_Radius: 0.5000001
   m_Height: 2
   m_Direction: 1
@@ -124,11 +125,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9bd867ce0dca0242b5ebffa60cd0566, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  team: 1
   flightJitter: 200
   teamAttraction: 5
   teamRepulsion: 4
   damping: 0.1
+  minBeeSize: 0
+  maxBeeSize: 0
+  speedStretch: 0
+  rotationStiffness: 0
+  aggression: 0.5
+  chaseForce: 0
+  carryForce: 0
+  grabDistance: 0
+  attackDistance: 0
+  attackForce: 0
+  hitDistance: 0
+  maxSpawnSpeed: 0
+  startBeeCount: 0
 --- !u!114 &7992802162242733060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -323,3 +336,43 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 1
+--- !u!114 &6978546073273119977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1081047938504222905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2fc08f3a4423504782f3caf5222d0d8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyTarget: {fileID: 0}
+  resourceTarget: {fileID: 0}
+  dead: 0
+  deathTimer: 0
+  isAttacking: 0
+  isHoldingResource: 0
+  beeMatrix:
+    e00: 0
+    e01: 0
+    e02: 0
+    e03: 0
+    e10: 0
+    e11: 0
+    e12: 0
+    e13: 0
+    e20: 0
+    e21: 0
+    e22: 0
+    e23: 0
+    e30: 0
+    e31: 0
+    e32: 0
+    e33: 0
+  beeColor:
+    x: 0
+    y: 0
+    z: 0
+    w: 0
