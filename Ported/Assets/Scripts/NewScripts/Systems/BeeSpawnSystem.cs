@@ -8,6 +8,7 @@ using UnityEngine;
 using Random = Unity.Mathematics.Random;
 using static UnityEngine.Rendering.DebugUI;
 using System;
+using UnityEngine.UIElements;
 
 public partial class BeeSpawnSystem : SystemBase
 {
@@ -125,13 +126,18 @@ public partial class BeeSpawnSystem : SystemBase
 
         // Spawn resources
         var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+
+        var position = _random.NextFloat3(minPos, maxPos);
+
+        //Debug.Log("position: " + position);
+
         var resourceSpawn = new SpawnJobResource
         {
             ecb = ecb2,
             resourcePrefab = _resourcePrefab,
             resourceData = _resourceData,
             fieldData = _fieldData,
-            position = _random.NextFloat3(minPos, maxPos)
+            position = position
     }.Schedule();
         resourceSpawn.Complete();
         ecb2.Playback(EntityManager);
@@ -236,6 +242,8 @@ public partial struct SpawnJobResource : IJobEntity
         );
         */
 
+
+
         ecb.SetComponent(resourceEntity, new Translation
         {
             Value = calculatePosition()
@@ -244,15 +252,12 @@ public partial struct SpawnJobResource : IJobEntity
 
         //Pass data from spawnData to resourceData or generate data for resource
 
-        //var resource = GetResource();
+        var resource = GetResource();
 
+        var fallingResourceTag = new FallingResourceTag();
 
-
-        //ecb.AddComponent(resourceEntity, resource);
-
-        //this.fieldData = fieldData;
-
-        //ecb.SetComponent(resourceEntity, resourceData);
+        ecb.AddComponent(resourceEntity, resource);
+        ecb.AddComponent(resourceEntity, fallingResourceTag);
 
 
         ecb.DestroyEntity(spawnEntity); //Should be cached
