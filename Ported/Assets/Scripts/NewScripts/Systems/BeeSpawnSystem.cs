@@ -61,9 +61,7 @@ public partial class BeeSpawnSystem : SystemBase
             ecb = _ecb,
             resourcePrefab = _resourcePrefab,
             position = zero,
-            resourceData = _resourceData,
-            fieldData = _fieldData,
-            random = _random
+            fieldData = _fieldData
         }.Schedule();
 
         initialBlueSpawns.Complete();
@@ -125,23 +123,22 @@ public partial class BeeSpawnSystem : SystemBase
         }
 
         // Spawn resources
-        var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+    //    var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-        var position = _random.NextFloat3(minPos, maxPos);
+    //    var position = _random.NextFloat3(minPos, maxPos);
 
-        //Debug.Log("position: " + position);
+    //    //Debug.Log("position: " + position);
 
-        var resourceSpawn = new SpawnJobResource
-        {
-            ecb = ecb2,
-            resourcePrefab = _resourcePrefab,
-            resourceData = _resourceData,
-            fieldData = _fieldData,
-            position = position
-    }.Schedule();
-        resourceSpawn.Complete();
-        ecb2.Playback(EntityManager);
-        ecb2.Dispose();
+    //    var resourceSpawn = new SpawnJobResource
+    //    {
+    //        ecb = ecb2,
+    //        resourcePrefab = _resourcePrefab,
+    //        fieldData = _fieldData,
+    //        position = position
+    //}.Schedule();
+    //    resourceSpawn.Complete();
+    //    ecb2.Playback(EntityManager);
+    //    ecb2.Dispose();
 
         //_ecb.Playback(EntityManager);
 
@@ -213,15 +210,69 @@ public partial struct SpawnJob : IJobEntity
     }
 }
 
+//[BurstCompile]
+//public partial struct SpawnJobResource : IJobEntity
+//{
+//    public EntityCommandBuffer ecb;
+//    public Entity resourcePrefab;
+//    public ResourceData resourceData;
+//    public float3 position;
+//    public FieldData fieldData;
+//    public Random random;
+//    //public int beesToSpawn;
+
+//    //void Execute(in ResourceSpawnData resourceSpawnData)
+//    //{
+//    //    Debug.Log("rd spawn");
+//    //}
+
+//    void Execute(Entity spawnEntity, ref ResourceSpawnData resourceSpawnData)
+//    {
+//        Debug.Log("Spawned resource");
+//        var resourceEntity = ecb.Instantiate(resourcePrefab);
+
+//        ecb.SetComponent(resourceEntity, new Translation
+//        {
+//            Value = CalculatePosition()
+//        }
+//        );
+
+//        //Pass data from spawnData to resourceData or generate data for resource
+
+//        var resource = GetResource();
+
+//        var fallingResourceTag = new FallingResourceTag();
+
+//        ecb.AddComponent(resourceEntity, resource);
+//        ecb.AddComponent(resourceEntity, fallingResourceTag);
+
+
+//        ecb.DestroyEntity(spawnEntity); //Should be cached
+//    }
+
+//    float3 CalculatePosition()
+//    {
+//        var rd = resourceData;
+
+//        float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * fieldData.size.x * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * fieldData.size.z);
+//        return pos;
+//    }
+
+//    Resource GetResource()
+//    {
+//        var resource = new Resource();
+//        resource.position = CalculatePosition();
+//        return resource;
+//    }
+//}
+
 [BurstCompile]
 public partial struct SpawnJobResource : IJobEntity
 {
     public EntityCommandBuffer ecb;
     public Entity resourcePrefab;
-    public ResourceData resourceData;
     public float3 position;
     public FieldData fieldData;
-    public Random random;
     //public int beesToSpawn;
 
     //void Execute(in ResourceSpawnData resourceSpawnData)
@@ -229,58 +280,31 @@ public partial struct SpawnJobResource : IJobEntity
     //    Debug.Log("rd spawn");
     //}
 
-    void Execute(Entity spawnEntity, ref ResourceSpawnData resourceSpawnData)
+    void Execute(in ResourceData resourceData)
     {
         Debug.Log("Spawned resource");
         var resourceEntity = ecb.Instantiate(resourcePrefab);
 
-        /*
-        ecb.AddComponent(resourceEntity, new Translation
-        {
-            Value = position
-        }
-        );
-        */
-
-
-
         ecb.SetComponent(resourceEntity, new Translation
         {
-            Value = calculatePosition()
+            Value = position
         }
         );
 
         //Pass data from spawnData to resourceData or generate data for resource
 
-        var resource = GetResource();
+        var resource = GetResource(resourceData);
 
         var fallingResourceTag = new FallingResourceTag();
 
         ecb.AddComponent(resourceEntity, resource);
         ecb.AddComponent(resourceEntity, fallingResourceTag);
-
-
-        ecb.DestroyEntity(spawnEntity); //Should be cached
     }
 
-    float3 calculatePosition()
-    {
-        //return null;
-        var rd = resourceData;
-        //var 
-
-        //var size_x = 10.0f;
-        //var size_x = 10.0f;
-
-        float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * fieldData.size.x * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * fieldData.size.z);
-        //float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * 1.0f * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * 1.0f);
-        return pos;
-    }
-
-    Resource GetResource()
+    Resource GetResource(ResourceData resourceData)
     {
         var resource = new Resource();
-        resource.position = calculatePosition();
+        resource.position = position;
         return resource;
     }
 }

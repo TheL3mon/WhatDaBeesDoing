@@ -10,31 +10,58 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public partial class ResourceSystem : SystemBase
 {
+    private Entity _blueTeamPrefab;
+    private Entity _yellowTeamPrefab;
+
     private EntityCommandBuffer _ecb;
     private Entity _resourcePrefab;
     private FieldData _fieldData;
     private ResourceData _resourceData;
     private NativeArray<int> _stackHeights;
-
     //public int[,] stackHeights;
 
-    protected override void OnStartRunning()
+    private void SetupResource()
     {
-        _resourcePrefab = GetSingleton<BeePrefabs>().resource;
-        _resourceData = GetSingleton<ResourceData>();
         _fieldData = GetSingleton<FieldData>();
-        _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-        _fieldData.stackHeights = new DynamicBuffer<int>();
+
+        _resourceData = GetSingleton<ResourceData>();
+
+        var rd = _resourceData;
+
+        var gridCounts = new int2((int)(_fieldData.size.x/rd.resourceSize), (int)(_fieldData.size.y/rd.resourceSize));
+        var gridSize = new Vector2(_fieldData.size.x/gridCounts.x, _fieldData.size.z/gridCounts.y);
+        var minGridPos = new Vector2((gridCounts.x-1f)*-.5f*gridSize.x,(gridCounts.y-1f)*-.5f*gridSize.y);
+        //var stackHeights = new int[gridCounts.x,gridCounts.y];
+
+        _resourceData.gridCounts = gridCounts;
+        _resourceData.gridSize = gridSize;
+        _resourceData.minGridPos = minGridPos;
 
         int size_x = _resourceData.gridCounts[0];
         int size_y = _resourceData.gridCounts[1];
 
-        _stackHeights = new NativeArray<int>(size_x*size_y, Allocator.Persistent);
+        _stackHeights = new NativeArray<int>(size_x * size_y, Allocator.Persistent);
+        //_resourceData.stackHeights = new NativeArray<int>(_fieldData.size.x * _fieldData.size., Allocator.Persistent); ;
+
         Debug.Log("stackHeights: " + (size_x * size_y));
-        //stackHeights = new int[_resourceData.gridCounts[0],_resourceData.gridCounts[1]];
+    }
+
+    protected override void OnStartRunning()
+    {
+        SetupResource();
+        _blueTeamPrefab = GetSingleton<BeePrefabs>().blueBee;
+        _yellowTeamPrefab = GetSingleton<BeePrefabs>().yellowBee;
+        _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+    }
+
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        _stackHeights.Dispose();
     }
 
     protected override void OnUpdate()
@@ -43,7 +70,7 @@ public partial class ResourceSystem : SystemBase
 
         var dt = Time.DeltaTime;
 
-        var resource = new FallingResourceJob
+        var fallingResourceJob = new FallingResourceJob
         {
             dt = dt,
             ecb = ecb2,
@@ -51,13 +78,23 @@ public partial class ResourceSystem : SystemBase
             fd = _fieldData,
             stackHeights = _stackHeights
         }.Schedule();
-        resource.Complete();
+        fallingResourceJob.Complete();
+
+        var spawnBeeFromResourceJob = new SpawnBeeFromResourceJob
+        {
+            ecb = ecb2,
+            rd = _resourceData,
+            blueBee = _blueTeamPrefab,
+            yellowBee = _yellowTeamPrefab
+
+        }.Schedule();
+        spawnBeeFromResourceJob.Complete();
+
+
+
         ecb2.Playback(EntityManager);
         ecb2.Dispose();
     }
-
-
-
 
     //[BurstCompile]
     public partial struct FallingResourceJob : IJobEntity
@@ -67,20 +104,15 @@ public partial class ResourceSystem : SystemBase
         public ResourceData rd;
         public FieldData fd;
         public float dt;
-        public bool onFloor;
-        //public int height;
         public NativeArray<int> stackHeights;
 
         void Execute(Entity resourceEntity, ref Resource resource, in FallingResourceTag frt)
         {
-            Debug.Log("Resource exists");
-            
-            //var resource = ecb.
-
             //Apply gravity on resource
             var g = fd.gravity * new float3(0.0f, -1.0f, 0.0f);
             resource.velocity += g * dt;
             resource.position += resource.velocity;
+
             //Debug.Log("dt: "+ dt);
             //Debug.Log("resource position: " + resource.position);
 
@@ -94,24 +126,31 @@ public partial class ResourceSystem : SystemBase
             //Debug.Log("gridPos: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
 
             //int height = stackHeights[index];
-            int height = 0;
+            int height = stackHeights[index];
 
-            resource.position.x = resource.gridX;
-            resource.position.z = resource.gridY;
-
-            float floorY = GetStackPos(resource.gridX, resource.gridY, height).y;
-
-            //Debug.Log("Floor y: " + floorY);
+            var pos = GetStackPos(resource.gridX, resource.gridY, height);
+            var floorY = pos.y;
 
             if (resource.position.y < floorY)
             {
-                resource.position.y = floorY;
+                resource.position = pos;
                 resource.velocity = float3.zero;
-                stackHeights[index]++;
-                //ecb.Remove
-                //ecb.SetComponent(resourceEntity, frt);
-                ecb.RemoveComponent(resourceEntity, typeof(FallingResourceTag));
 
+                if (Mathf.Abs(resource.position.x) > fd.size.x * .4f)
+                {
+                    int team = 0;
+                    if (resource.position.x > 0f)
+                    {
+                        team = 1;
+                    }
+                    var spawnBeeTag = new SpawnBeeTag();
+                    spawnBeeTag.team = team;
+                    //ecb.AddComponent(resourceEntity, spawnBeeTag);
+                    //Debug.Log("spawnBeeTag added");
+                }
+
+                stackHeights[index]++;
+                ecb.RemoveComponent(resourceEntity, typeof(FallingResourceTag));
             }
 
             ecb.SetComponent(resourceEntity, new Translation
@@ -128,6 +167,8 @@ public partial class ResourceSystem : SystemBase
             var gridCounts = rd.gridCounts;
 
             var gridX = Mathf.FloorToInt((pos.x - minGridPos.x + gridSize.x * .5f) / gridSize.x);
+
+
             var gridY = Mathf.FloorToInt((pos.z - minGridPos.y + gridSize.y * .5f) / gridSize.y);
 
             gridX = Mathf.Clamp(gridX, 0, gridCounts.x - 1);
@@ -140,118 +181,41 @@ public partial class ResourceSystem : SystemBase
         {
             var minGridPos = rd.minGridPos;
             var gridSize = rd.gridSize;
-            var gridCounts = rd.gridCounts;
-            //return new float3(minGridPos.x + x * gridSize.x, -fd.size.y * .5f + (height + .5f) * rd.resourceSize, minGridPos.y + y * gridSize.y);
             return new float3(minGridPos.x + x * gridSize.x, -fd.size.y * .5f + (height + .5f) * rd.resourceSize, minGridPos.y + y * gridSize.y);
         }
-
-        //float3 GetMovement(float3 position)
-        //{
-        //    float3 g = fieldData.gravity;
-
-
-
-        //    return position * g * dt;
-        //}
-
-
     }
 
 
-    //public Resource TryGetRandomResource(ref ResourceData resourceData)
-    //{
-    //    //if (instance.resources.Count==0) {
-    //    //	return null;
-    //    //} else {
-    //    //	Resource resource = instance.resources[Random.Range(0,instance.resources.Count)];
-    //    //	int stackHeight = instance.stackHeights[resource.gridX,resource.gridY];
-    //    //	if (resource.holder == null || resource.stackIndex==stackHeight-1) {
-    //    //		return resource;
-    //    //	} else {
-    //    //		return null;
-    //    //	}
-    //    //}
+    public partial struct SpawnBeeFromResourceJob : IJobEntity
+    {
+        public EntityCommandBuffer ecb;
+        public ResourceData rd;
+        public Entity blueBee;
+        public Entity yellowBee;
 
-    //    if (resourceData.resources.Count != 0)
-    //    {
-    //        /*
+        void Execute(Entity resourceEntity, ref Resource resource, in SpawnBeeTag sbt)
+        {
+            Debug.Log("Bee spawning should happen here");
 
-    //        var randomResource = resourceData.resources[Random.Range(0, resourceData.resources.Count)];
-    //        int stackHeight = resourceData.stackHeights[randomResource.gridX, randomResource.gridY];
+            for (int i = 0; i < rd.beesPerResource; i++)
+            {
+                Entity newBee;
 
-    //        if (randomResource.holder == null || randomResource.stackIndex == stackHeight - 1)
-    //        {
-    //            return randomResource;
-    //        }
+                if (sbt.team == 0)
+                    newBee = ecb.Instantiate(yellowBee);
+                else
+                    newBee = ecb.Instantiate(blueBee);
+                   
+                var newTranslation = new Translation
+                {
+                    Value = resource.position
+                };
 
-    //        else
-    //        {
-    //            return new Resource(); // null
-    //        }*/
-    //        return new Resource(); // null
-    //    }
-    //    else
-    //    {
-    //        return new Resource(); // null
-    //    }
-    //}
+                ecb.SetComponent(newBee, newTranslation);
+                ecb.RemoveComponent(resourceEntity, typeof(SpawnBeeTag));
 
-    //public static bool IsTopOfStack(Resource resource, ref ResourceData resourceData)
-    //{
-    //    int stackHeight = resourceData.stackHeights[resource.gridX, resource.gridY];
-    //    return resource.stackIndex == stackHeight - 1;
-    //}
-
-    //Vector3 GetStackPos(int x, int y, int height, ref ResourceData resourceData)
-    //{
-    //    return new Vector3(resourceData.minGridPos.x + x * resourceData.gridSize.x, -Field.size.y * .5f + (height + .5f) * resourceData.resourceSize, resourceData.minGridPos.y + y * resourceData.gridSize.y);
-    //}
-    //public Resource TryGetRandomResource(ref ResourceData resourceData)
-    //{
-    //    //if (instance.resources.Count==0) {
-    //    //	return null;
-    //    //} else {
-    //    //	Resource resource = instance.resources[Random.Range(0,instance.resources.Count)];
-    //    //	int stackHeight = instance.stackHeights[resource.gridX,resource.gridY];
-    //    //	if (resource.holder == null || resource.stackIndex==stackHeight-1) {
-    //    //		return resource;
-    //    //	} else {
-    //    //		return null;
-    //    //	}
-    //    //}
-
-    //    if (resourceData.resources.Count != 0)
-    //    {
-    //        /*
-
-    //        var randomResource = resourceData.resources[Random.Range(0, resourceData.resources.Count)];
-    //        int stackHeight = resourceData.stackHeights[randomResource.gridX, randomResource.gridY];
-
-    //        if (randomResource.holder == null || randomResource.stackIndex == stackHeight - 1)
-    //        {
-    //            return randomResource;
-    //        }
-
-    //        else
-    //        {
-    //            return new Resource(); // null
-    //        }*/
-    //        return new Resource(); // null
-    //    }
-    //    else
-    //    {
-    //        return new Resource(); // null
-    //    }
-    //}
-
-    //public static bool IsTopOfStack(Resource resource, ref ResourceData resourceData)
-    //{
-    //    int stackHeight = resourceData.stackHeights[resource.gridX, resource.gridY];
-    //    return resource.stackIndex == stackHeight - 1;
-    //}
-
-    //Vector3 GetStackPos(int x, int y, int height, ref ResourceData resourceData)
-    //{
-    //    return new Vector3(resourceData.minGridPos.x + x * resourceData.gridSize.x, -Field.size.y * .5f + (height + .5f) * resourceData.resourceSize, resourceData.minGridPos.y + y * resourceData.gridSize.y);
-    //}
+            }
+            ecb.DestroyEntity(resourceEntity); //Should be cached
+        }
+    }
 }

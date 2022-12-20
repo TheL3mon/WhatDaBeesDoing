@@ -21,13 +21,19 @@ public partial class MouseRayCastSystem : SystemBase
     private BuildPhysicsWorld _buildPhysicsWorld;
     private CollisionWorld _collisionWorld;
     private Entity _marker;
-    private Entity _resource;
+    //private Entity _resource;
+    private Entity _resourcePrefab;
+    private ResourceData _resourceData;
+    private FieldData _fieldData;
     private float3 fieldSize;
 
     protected override void OnStartRunning()
     {
         _marker = GetSingleton<BeePrefabs>().mouseMarker;
-        _resource = GetSingleton<BeePrefabs>().resource;
+        //_resource = GetSingleton<BeePrefabs>().resource;
+        _resourcePrefab = GetSingleton<BeePrefabs>().resource;
+        _resourceData = GetSingleton<ResourceData>();
+        _fieldData = GetSingleton<FieldData>();
         _mainCamera = Camera.main;
         _marker = EntityManager.Instantiate(_marker);
         fieldSize = GetSingleton<FieldData>().size;
@@ -114,15 +120,17 @@ public partial class MouseRayCastSystem : SystemBase
             {
                 markerPos.Value.y -= 1;
             }
-            var resourceSpawnJob = new SpawnResourceJob
+
+            var resourceSpawn = new SpawnJobResource
             {
                 ecb = ecb,
-                resource = _resource,
+                resourcePrefab = _resourcePrefab,
+                fieldData = _fieldData,
                 position = new float3 { x = markerPos.Value.x, y = markerPos.Value.y, z = markerPos.Value.z }
             }.Schedule();
-
-            resourceSpawnJob.Complete();
+            resourceSpawn.Complete();
             ecb.Playback(EntityManager);
+            ecb.Dispose();
         }
     }
 
@@ -163,31 +171,5 @@ public partial struct SpawnResourceJob1 : IJobEntity
         };
 
         ecb.SetComponent(newResource, newTranslation);
-    }
-}
-
-
-[BurstCompile]
-public partial struct SpawnResourceJob : IJobEntity
-{
-    public EntityCommandBuffer ecb;
-    public Entity resource;
-    public float3 position;
-    //public int beesToSpawn;
-
-    void Execute(in ResourceData spawnData)
-    {
-        //for (int i = 0; i < spawnData.spawnPerAction; i++)
-        //{
-            var newBee = ecb.Instantiate(resource);
-
-            var newTranslation = new Translation
-            {
-                Value = position
-            };
-
-            ecb.SetComponent(newBee, newTranslation);
-
-        //}
     }
 }

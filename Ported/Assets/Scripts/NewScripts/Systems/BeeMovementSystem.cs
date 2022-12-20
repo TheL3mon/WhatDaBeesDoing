@@ -16,6 +16,7 @@ using JobRandom = Unity.Mathematics.Random;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
+using System;
 
 public partial class BeeMovementSystem : SystemBase
 {
@@ -215,7 +216,7 @@ public partial struct targetingJob :IJobEntity
                         }
                     } else
                     {
-                        Debug.Log("Missing implementation for getting a resource");
+                        //Debug.Log("Missing implementation for getting a resource");
                     }
                 } else if (bee.enemyTarget != Entity.Null)
                 {
@@ -248,5 +249,14 @@ public partial struct targetingJob :IJobEntity
                 }
             }
         }
+    }
+}
+
+public partial struct ChaseResourceJob : IJobEntity
+{
+    public NativeArray<Entity> resources;
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData)
+    {
+
     }
 }
