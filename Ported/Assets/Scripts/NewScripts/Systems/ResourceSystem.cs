@@ -59,7 +59,7 @@ public partial class ResourceSystem : SystemBase
 
 
 
-    [BurstCompile]
+    //[BurstCompile]
     public partial struct FallingResourceJob : IJobEntity
     {
         public EntityCommandBuffer ecb;
@@ -82,7 +82,7 @@ public partial class ResourceSystem : SystemBase
             resource.velocity += g * dt;
             resource.position += resource.velocity;
             //Debug.Log("dt: "+ dt);
-            Debug.Log("resource position: " + resource.position);
+            //Debug.Log("resource position: " + resource.position);
 
             //Snap to grid
             var gridIndex = GetGridIndex(resource);
@@ -91,9 +91,10 @@ public partial class ResourceSystem : SystemBase
 
             int index = resource.gridX + resource.gridY * rd.gridCounts.y;
 
-            Debug.Log("gridPos: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
+            //Debug.Log("gridPos: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
 
-            int height = stackHeights[index];
+            //int height = stackHeights[index];
+            int height = 0;
 
             resource.position.x = resource.gridX;
             resource.position.z = resource.gridY;
