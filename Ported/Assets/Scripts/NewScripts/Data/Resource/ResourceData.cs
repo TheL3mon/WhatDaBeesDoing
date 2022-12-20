@@ -34,7 +34,9 @@ public struct ResourceData : IComponentData
 public struct Resource : IComponentData
 {
 	public float3 position;
+	public Entity holder;
 	public bool stacked;
+	public bool topOfStack;
 	public int stackIndex;
 	public int gridX;
 	public int gridY;

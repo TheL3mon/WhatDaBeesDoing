@@ -93,7 +93,7 @@ public partial class ParticleSystem : SystemBase
             ecb.Dispose();
         }
 
-
+		/*
         // ORIGINAL Update()
         for (int j = 0; j <= _particleData.activeBatch; j++)
         {

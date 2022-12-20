@@ -75,6 +75,7 @@ public partial class BeeMovementSystem : SystemBase
 
         var beeStatus = GetComponentDataFromEntity<Bee>(true);
         var positions = GetComponentDataFromEntity<Translation>(false);
+        var resourceStatus = GetComponentDataFromEntity<Resource>(false);
 
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
@@ -82,7 +83,6 @@ public partial class BeeMovementSystem : SystemBase
         {
             blueTeam = blueArr,
             yellowTeam = yellowArr,
-            resources = resourceArr,
             status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
@@ -91,8 +91,22 @@ public partial class BeeMovementSystem : SystemBase
             random = _random
         }.Schedule();
         //Dynamic buffers is an option
-
         testingJob.Complete();
+        /*
+        var collectingJob = new collectResourceJob
+        {
+            blueTeam = blueArr,
+            yellowTeam = yellowArr,
+            resources = resourceArr,
+            resourceStatus = resourceStatus,
+            positions = positions,
+            dt = Time.DeltaTime,
+            ecb = ecb,
+            random = _random
+        }.Schedule();*/
+
+
+        //collectingJob.Complete();
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
@@ -183,11 +197,11 @@ public partial struct beeMoveJob : IJobEntity
         
     }
 }
+
 public partial struct targetingJob :IJobEntity
 {
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
-    public NativeArray<Entity> resources;
     public ComponentDataFromEntity<Translation> positions;
     public EntityManager manager;
     public float dt;
@@ -198,10 +212,10 @@ public partial struct targetingJob :IJobEntity
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData)
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
     {
-        if (bee.dead == false)
-        {
+        //if (bee.dead == false)
+        //{
             if(blueTeam.Contains(e))
             {
                 if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
@@ -215,9 +229,11 @@ public partial struct targetingJob :IJobEntity
                         }
                     } else
                     {
-                        Debug.Log("Missing implementation for getting a resource");
+                        ecb.AddComponent(e, new CollectingTag());
+                        //Debug.Log("Missing implementation for getting a resource");
                     }
-                } else if (bee.enemyTarget != Entity.Null)
+                } 
+                else if (bee.enemyTarget != Entity.Null)
                 {
                     if (status[bee.enemyTarget].dead)
                     {
@@ -241,12 +257,17 @@ public partial struct targetingJob :IJobEntity
                                 //velocity change
 
                                 ecb.AddComponent(bee.enemyTarget, new DeadTag());
+                                ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
                                 bee.enemyTarget = Entity.Null;
                             }
                         }
                     }
                 }
+                else if (bee.resourceTarget != Entity.Null)
+                {
+                    ecb.AddComponent(e, new CollectingTag());
+                }
             }
-        }
+        //}
     }
 }
