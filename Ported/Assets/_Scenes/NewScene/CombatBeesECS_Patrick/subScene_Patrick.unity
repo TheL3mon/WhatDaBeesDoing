@@ -401,10 +401,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   size:
-    x: 0
-    y: 0
-    z: 0
-  gravity: 0
+    x: 100
+    y: 20
+    z: 30
+  gravity: 9.82
 --- !u!1001 &1834914707
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -420,17 +420,17 @@ PrefabInstance:
     - target: {fileID: 3346073098161235698, guid: 82d5c8b62e49fa540b75b8b971738364,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3346073098161235698, guid: 82d5c8b62e49fa540b75b8b971738364,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3346073098161235698, guid: 82d5c8b62e49fa540b75b8b971738364,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3346073098161235698, guid: 82d5c8b62e49fa540b75b8b971738364,
         type: 3}
@@ -466,6 +466,41 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: gridSize.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: gridSize.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: gridCounts.x
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: gridCounts.y
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: minGridPos.x
+      value: -50
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: minGridPos.y
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
+        type: 3}
+      propertyPath: resourceSize
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3346073098161235703, guid: 82d5c8b62e49fa540b75b8b971738364,
         type: 3}
