@@ -19,13 +19,18 @@ public partial class ParticleSystem : SystemBase
 
     public ParticleData _particleData;
 
-    // TEMPORARY - Remove and do it in ParticleData once we know how to do arrays
+    /* ARRAY MAPPING CHEATSHEET
+    2D array -> (x,y)
+	1D array -> index = y * x_count + x
+    */
+
     //public List<BeeParticle> particles;
     public NativeArray<BeeParticle> particles;
-    //public Matrix4x4[][] matrices;
-    public NativeArray<NativeArray<Matrix4x4>> matrices;
+	//public Matrix4x4[][] matrices;
+	//public NativeArray<NativeArray<Matrix4x4>> matrices;
+	public NativeArray<Matrix4x4> matrices;
     //public Vector4[][] colors;
-    public NativeArray<NativeArray<float4>> colors;
+    public NativeArray<float4> colors;
     //public List<BeeParticle> pooledParticles;
     public NativeArray<BeeParticle> pooledParticles;
     //
@@ -52,16 +57,18 @@ public partial class ParticleSystem : SystemBase
         pooledParticles = new NativeArray<BeeParticle>(1000, Unity.Collections.Allocator.Persistent); // TODO: this should be dynamic, the size is temporary
 
         //matrices = new Matrix4x4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
-        matrices = new NativeArray<NativeArray<Matrix4x4>>(_particleData.maxParticleCount / _particleData.instancesPerBatch + 1, Unity.Collections.Allocator.Persistent);
+        matrices = new NativeArray<Matrix4x4>(_particleData.maxParticleCount / _particleData.instancesPerBatch + 1, Unity.Collections.Allocator.Persistent);
 		
 		//colors = new Vector4[_particleData.maxParticleCount / _particleData.instancesPerBatch + 1][];
-        colors = new NativeArray<NativeArray<float4>>(_particleData.maxParticleCount / _particleData.instancesPerBatch + 1, Unity.Collections.Allocator.Persistent);
+        colors = new NativeArray<float4>(_particleData.maxParticleCount / _particleData.instancesPerBatch + 1, Unity.Collections.Allocator.Persistent);
 
-        //matrices[0] = new Matrix4x4[_particleData.instancesPerBatch];
-        matrices[0] = new NativeArray<Matrix4x4>(_particleData.instancesPerBatch, Unity.Collections.Allocator.Persistent);
-        
-		//colors[0] = new Vector4[_particleData.instancesPerBatch];
-        colors[0] = new NativeArray<float4>(_particleData.instancesPerBatch, Unity.Collections.Allocator.Persistent);
+		//matrices[0] = new Matrix4x4[_particleData.instancesPerBatch];
+		int vectorData = _particleData.instancesPerBatch;
+        Vector4 matrixData = new Vector4(vectorData, vectorData, vectorData, vectorData);
+        matrices[0] = new Matrix4x4(matrixData, matrixData, matrixData, matrixData);
+
+        //colors[0] = new Vector4[_particleData.instancesPerBatch];
+        colors[0] = new float4(_particleData.instancesPerBatch);
 
         _particleData.activeBatch = 0;
         _particleData.activeBatchSize = 0;
@@ -103,10 +110,16 @@ public partial class ParticleSystem : SystemBase
                 batchSize = _particleData.activeBatchSize;
             }
             int batchOffset = j * _particleData.instancesPerBatch;
-            //Matrix4x4[] batchMatrices = matrices[j];
-            NativeArray<Matrix4x4> batchMatrices = matrices[j];
+
+			//Matrix4x4[] batchMatrices = matrices[j];
+			NativeArray<Matrix4x4> batchMatrices = new NativeArray<Matrix4x4>(); // this shit is scuffed yo
+			//batchMatrices[0].SetRow(0, matrices[j].GetRow(0));				    scuffed shit part 2 - electric boogaloo
+			batchMatrices[0] = matrices[j]; // tryna unscuff this shit to no avail
+
             //Vector4[] batchColors = colors[j];
-            NativeArray<float4> batchColors = colors[j];
+            NativeArray<float4> batchColors = new NativeArray<float4>();
+            batchColors[0] = colors[j];
+
             for (int i = 0; i < batchSize; i++)
             {
                 BeeParticle particle = particles[i + batchOffset];
@@ -142,25 +155,11 @@ public partial class ParticleSystem : SystemBase
 			}
 			if (batchSize > 0)
 			{
-				// TODO: once we have materials working
-				//matProps.SetVectorArray("_Color", colors[i]);
-				//Graphics.DrawMeshInstanced(particleMesh, 0, particleMaterial, matrices[i], batchSize, matProps);
-			}
-		}
-
-
-		/*
-            Entities.ForEach((ref Translation translation, in Rotation rotation) => {
-            // Implement the work to perform for each entity here.
-            // You should only access data that is local or that is a
-            // field on this job. Note that the 'rotation' parameter is
-            // marked as 'in', which means it cannot be modified,
-            // but allows this job to run in parallel with other jobs
-            // that want to read Rotation component data.
-            // For example,
-            //     translation.Value += math.mul(rotation.Value, new float3(0, 0, 1)) * deltaTime;
-        }).Schedule();
-		*/
+                // TODO: https://docs.unity3d.com/Packages/com.unity.entities.graphics@1.0/manual/material-overrides-code.html
+                //matProps.SetVectorArray("_Color", colors[i]);
+                //Graphics.DrawMeshInstanced(particleMesh, 0, particleMaterial, matrices[i], batchSize, matProps);
+            }
+        }
 	}
 
     [BurstCompile]
