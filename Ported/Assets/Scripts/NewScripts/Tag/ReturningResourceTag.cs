@@ -1,6 +1,6 @@
 using Unity.Entities;
-
 [GenerateAuthoringComponent]
-public struct ChaseResourceTag : IComponentData
+public struct ReturningResourceTag : IComponentData
 {
+
 }

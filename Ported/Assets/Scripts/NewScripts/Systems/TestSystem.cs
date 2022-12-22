@@ -101,9 +101,6 @@ public partial struct tryGetRandomResourceJob : IJobEntity
         var resource = resources[random.NextInt(resources.Length)];
         var status = resourceStatus[resource];
 
-        //var t = stackHeights;
-
-        //int index = resource.gridX + resource.gridY * rd.gridCounts.x;
         int index = status.gridX + status.gridY * resourceData.gridCounts.x;
 
         var stackHeight = stackHeights[index];
@@ -179,6 +176,8 @@ public partial struct collectResourceJob : IJobEntity
     {
         var target = bee.resourceTarget;
         var index = resources.IndexOf(target);
+        if (index == -1)
+            return;
         var resource = resources[index];
         var status = resourceStatus[resource];
         bee.resourceTarget = resource;
@@ -210,6 +209,7 @@ public partial struct collectResourceJob : IJobEntity
             var stackHeight = stackHeights[resourceIndex];
             var resourceHeight = status.height;
 
+            Debug.Log("gridPos2: (" + status.gridX + ", " + status.gridY + "). index: (" + index + "). heights: (" + resourceHeight + ", " + stackHeight + ")");
 
             if (stackHeight != resourceHeight) 
                 bee.resourceTarget = Entity.Null;
@@ -227,7 +227,18 @@ public partial struct collectResourceJob : IJobEntity
                     Debug.Log("Implement logic to grab resource");
                     status.holder = e;
                     status.stacked = false;
+
+                    //Set component
+
+                    var r = new Resource();
+                    r.position = status.position;
+                    r.height = status.height;
+                    r.holder = e;
+
+                    ecb.SetComponent(bee.resourceTarget, r);
+
                     //reduce stack of resource
+                    stackHeights[resourceIndex] -= 1;
                 }
             }
         }
@@ -235,17 +246,62 @@ public partial struct collectResourceJob : IJobEntity
         {
             if (status.holder == e)
             {
-                float3 targetPos = new float3(100, 20, 100); //TODO should find its own field
+                Debug.Log("Bee should be returning resource");
+                //float3 targetPos = new float3(100, 20, 100); //TODO should find its own field
+                float3 targetPos;
+
+                if (bee.team == 0)
+                {
+                    targetPos = new float3(50, 0, 0);
+                } 
+                else
+                {
+                    targetPos = new float3(-50, 0, 0);
+                }
+
                 //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
                 var delta = targetPos - positions[e].Value;
                 var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
                 velocity.Linear += (targetPos - positions[e].Value) * (beeData.carryForce * dt / dist);
+
+                if (Mathf.Abs(delta.x) < 10.0f)
+                {
+                    Debug.Log("Bee arrived at destination");
+                    var r = new Resource();
+                    r.position = positions[e].Value;
+                    r.height = status.height;
+                    r.holder = Entity.Null;
+
+
+                    var fallingResourceTag = new FallingResourceTag();
+                    ecb.SetComponent(bee.resourceTarget, r);
+                    ecb.AddComponent(bee.resourceTarget, fallingResourceTag);
+
+                    //ecb.AddComponent(bee.enemyTarget, new FallingResourceTag());
+                }
+                else
+                {
+                    var r = new Resource();
+                    r.position = positions[e].Value;
+                    r.height = status.height;
+                    r.holder = e;
+
+                    ecb.SetComponent(bee.resourceTarget, r);
+
+                    ecb.SetComponent(bee.resourceTarget, new Translation
+                    {
+                        Value = r.position
+                    });
+                }
+
+
+                /*
                 if (dist < 1f)
                 {
                     Debug.Log("Bee arrived at destination");
                     //var beeResourceStatus = resourceStatus[bee.resourceTarget];
                     //status.holder = Entity.Null;
-                }
+                }*/
             }
             else if (beePartOfBlueTeam && holderPartOfYellowTeam) bee.enemyTarget = status.holder;
             else if (beePartOfYellowTeam && holderPartOfBlueTeam) bee.enemyTarget = status.holder;

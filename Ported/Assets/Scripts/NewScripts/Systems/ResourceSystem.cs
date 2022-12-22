@@ -23,7 +23,8 @@ public partial class ResourceSystem : SystemBase
     public static ResourceData _resourceData;
     //public static NativeArray<int> _stackHeights;
 
-    [NativeDisableContainerSafetyRestriction] public static NativeList<int> _stackHeights;
+    public static NativeList<int> _stackHeights;
+    //public static NativeParallelHashMap<int, Resource> _resourceHashMap; 
     //public int[,] stackHeights;
 
     private void SetupResource()
@@ -112,6 +113,7 @@ public partial class ResourceSystem : SystemBase
         public FieldData fd;
         public float dt;
         public NativeArray<int> stackHeights;
+        //public NativeParallelHashMap<int, Resource> resourceHashMap;
 
         void Execute(Entity resourceEntity, ref Resource resource, in FallingResourceTag frt)
         {
@@ -120,9 +122,6 @@ public partial class ResourceSystem : SystemBase
             resource.velocity += g * dt;
             resource.position += resource.velocity;
 
-            //Debug.Log("dt: "+ dt);
-            //Debug.Log("resource position: " + resource.position);
-
             //Snap to grid
             var gridIndex = GetGridIndex(resource);
             resource.gridX = gridIndex[0];
@@ -130,15 +129,8 @@ public partial class ResourceSystem : SystemBase
 
             int index = resource.gridX + resource.gridY * rd.gridCounts.x;
 
-            //Debug.Log("index: " + index);
-
             //Debug.Log("gridPos1: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
-            //Debug.Log("gridPos1 count: " + rd.gridCounts.x);
-
-            //int height = stackHeights[index];
             int height = stackHeights[index];
-            //Debug.Log("height: " + height);
-            //Debug.Log("index: " + index);
 
             var pos = GetStackPos(resource.gridX, resource.gridY, height);
             var floorY = pos.y;

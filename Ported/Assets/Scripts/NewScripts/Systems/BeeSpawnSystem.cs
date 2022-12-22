@@ -27,7 +27,7 @@ public partial class BeeSpawnSystem : SystemBase
     public Random _random;
     bool buttonpressed = false;
     float timer;
-    const int resourceSpawnPerFrame = 1;
+    const int resourceSpawnPerFrame = 10;
 
     protected override void OnStartRunning()
     {
@@ -218,62 +218,6 @@ public partial struct SpawnJob : IJobEntity
         }
     }
 }
-
-//[BurstCompile]
-//public partial struct SpawnJobResource : IJobEntity
-//{
-//    public EntityCommandBuffer ecb;
-//    public Entity resourcePrefab;
-//    public ResourceData resourceData;
-//    public float3 position;
-//    public FieldData fieldData;
-//    public Random random;
-//    //public int beesToSpawn;
-
-//    //void Execute(in ResourceSpawnData resourceSpawnData)
-//    //{
-//    //    Debug.Log("rd spawn");
-//    //}
-
-//    void Execute(Entity spawnEntity, ref ResourceSpawnData resourceSpawnData)
-//    {
-//        Debug.Log("Spawned resource");
-//        var resourceEntity = ecb.Instantiate(resourcePrefab);
-
-//        ecb.SetComponent(resourceEntity, new Translation
-//        {
-//            Value = CalculatePosition()
-//        }
-//        );
-
-//        //Pass data from spawnData to resourceData or generate data for resource
-
-//        var resource = GetResource();
-
-//        var fallingResourceTag = new FallingResourceTag();
-
-//        ecb.AddComponent(resourceEntity, resource);
-//        ecb.AddComponent(resourceEntity, fallingResourceTag);
-
-
-//        ecb.DestroyEntity(spawnEntity); //Should be cached
-//    }
-
-//    float3 CalculatePosition()
-//    {
-//        var rd = resourceData;
-
-//        float3 pos = new float3(rd.minGridPos.x * .25f + random.NextFloat() * fieldData.size.x * .25f, random.NextFloat() * 10f, rd.minGridPos.y + random.NextFloat() * fieldData.size.z);
-//        return pos;
-//    }
-
-//    Resource GetResource()
-//    {
-//        var resource = new Resource();
-//        resource.position = CalculatePosition();
-//        return resource;
-//    }
-//}
 
 [BurstCompile]
 public partial struct SpawnJobResource : IJobEntity

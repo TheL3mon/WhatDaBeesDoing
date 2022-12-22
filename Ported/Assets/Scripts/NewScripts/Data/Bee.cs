@@ -20,4 +20,6 @@ public struct Bee : IComponentData
     //FIXME In original version they use batching, is necessary in our case? Is batching automatic in DOTS?
 
     public float4 beeColor;
+
+    public int team;
 }
