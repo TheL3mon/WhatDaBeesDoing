@@ -76,6 +76,7 @@ public partial class TestSystem : SystemBase
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
+        ecb.Dispose();
     }
 }
 

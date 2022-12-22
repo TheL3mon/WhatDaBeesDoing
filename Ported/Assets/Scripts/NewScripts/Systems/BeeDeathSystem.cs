@@ -47,6 +47,7 @@ public partial class BeeDeathSystem : SystemBase
             ecb.Playback(EntityManager);
         }
 
+        ecb.Dispose();
         deadArr.Dispose();
 
     }

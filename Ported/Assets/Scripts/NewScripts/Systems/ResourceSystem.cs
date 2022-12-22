@@ -18,7 +18,6 @@ public partial class ResourceSystem : SystemBase
     private Entity _blueTeamPrefab;
     private Entity _yellowTeamPrefab;
 
-    private EntityCommandBuffer _ecb;
     private Entity _resourcePrefab;
     private FieldData _fieldData;
     public static ResourceData _resourceData;
@@ -30,7 +29,6 @@ public partial class ResourceSystem : SystemBase
     private void SetupResource()
     {
         _fieldData = GetSingleton<FieldData>();
-
         _resourceData = GetSingleton<ResourceData>();
 
         var rd = _resourceData;
@@ -65,7 +63,6 @@ public partial class ResourceSystem : SystemBase
         SetupResource();
         _blueTeamPrefab = GetSingleton<BeePrefabs>().blueBee;
         _yellowTeamPrefab = GetSingleton<BeePrefabs>().yellowBee;
-        _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
     }
 
     protected override void OnDestroy()

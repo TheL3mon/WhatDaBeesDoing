@@ -111,8 +111,18 @@ public partial class BeeMovementSystem : SystemBase
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
-        
+
         ecb.Playback(World.EntityManager);
+
+        /*
+        blueTeamEntities.Dispose();
+        allBlueBees.Dispose();
+        blueTeamQuery.Dispose();
+
+        yellowTeamQuery.Dispose();
+
+        resourceQuery.Dispose();
+        */
 
         //var position = positions[nativearr[0]];
         //.WithReadOnly(positions)
@@ -183,6 +193,8 @@ public partial class BeeMovementSystem : SystemBase
                 velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
             }
         }).Run();
+
+        ecb.Dispose();
     }
 }
 
