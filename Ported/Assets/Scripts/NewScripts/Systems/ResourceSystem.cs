@@ -149,7 +149,7 @@ public partial class ResourceSystem : SystemBase
                     }
                     var spawnBeeTag = new SpawnBeeTag();
                     spawnBeeTag.team = team;
-                    //ecb.AddComponent(resourceEntity, spawnBeeTag);
+                    ecb.AddComponent(resourceEntity, spawnBeeTag);
                     //Debug.Log("spawnBeeTag added");
                 }
                 //Debug.Log("Final pos: (" + resource.position + ") Grid coords: (" + resource.gridX + ", " + resource.gridY + ")");

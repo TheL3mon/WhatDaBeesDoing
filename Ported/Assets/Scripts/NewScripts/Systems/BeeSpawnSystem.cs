@@ -128,41 +128,24 @@ public partial class BeeSpawnSystem : SystemBase
 
         // Spawn resources
         //var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-        var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         //EntityCommandBuffer.ParallelWriter parallelEcb = ecb2.AsParallelWriter();
 
+        //for (int i = 0; i < resourceSpawnPerFrame; i++)
+        //{
+        //    var position = _random.NextFloat3(minPos, maxPos);
+        //    var resourceSpawn = new SpawnJobResource
+        //    {
+        //        ecb = ecb2,
+        //        resourcePrefab = _resourcePrefab,
+        //        fieldData = _fieldData,
+        //        position = position
+        //    }.Schedule();
+        //    resourceSpawn.Complete();
 
-        //Debug.Log("position: " + position);
-        for (int i = 0; i < resourceSpawnPerFrame; i++)
-        {
-            var position = _random.NextFloat3(minPos, maxPos);
-            var resourceSpawn = new SpawnJobResource
-            {
-                ecb = ecb2,
-                resourcePrefab = _resourcePrefab,
-                fieldData = _fieldData,
-                position = position
-            }.Schedule();
-            resourceSpawn.Complete();
+        //}
 
-        }
-
-
-        /*
-        var resourceSpawn = new SpawnJobResource
-        {
-            ecb = ecb2,
-            resourcePrefab = _resourcePrefab,
-            fieldData = _fieldData,
-            position = position
-        }.Schedule();
-        */
-        ecb2.Playback(EntityManager);
-        ecb2.Dispose();
-
-        //_ecb.Playback(EntityManager);
-
-
+        //ecb2.Playback(EntityManager);
+        //ecb2.Dispose();
     }
 }
 
