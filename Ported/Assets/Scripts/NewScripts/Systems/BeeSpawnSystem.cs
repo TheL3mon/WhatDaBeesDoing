@@ -59,17 +59,22 @@ public partial class BeeSpawnSystem : SystemBase
             position = zero
         }.Schedule();
 
-        var intialResourceSpawns = new SpawnJobResource
+        for (int i = 0; i < resourceSpawnPerFrame; i++)
         {
-            ecb = _ecb,
-            resourcePrefab = _resourcePrefab,
-            position = zero,
-            fieldData = _fieldData
-        }.Schedule();
+            var intialResourceSpawns = new SpawnJobResource
+            {
+                ecb = _ecb,
+                resourcePrefab = _resourcePrefab,
+                position = zero,
+                fieldData = _fieldData
+            }.Schedule();
+            intialResourceSpawns.Complete();
+        }
+
+
 
         initialBlueSpawns.Complete();
         initialYellowSpawns.Complete();
-        intialResourceSpawns.Complete();
         _ecb.Playback(EntityManager);
         _ecb.Dispose();
 
@@ -303,6 +308,7 @@ public partial struct SpawnJobResource : IJobEntity
     {
         var resource = new Resource();
         resource.position = position;
+        resource.height = -1;
         return resource;
     }
 }

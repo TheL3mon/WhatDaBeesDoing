@@ -268,7 +268,7 @@ public partial struct targetingJob :IJobEntity
                 }
                 else if (bee.resourceTarget != Entity.Null)
                 {
-                    Debug.Log("Bee has a resource target");    
+                    //Debug.Log("Bee has a resource target");    
                     ecb.AddComponent(e, new CollectingTag());
                 }
             }

@@ -137,7 +137,7 @@ MonoBehaviour:
   aggression: 0.5
   chaseForce: 0
   carryForce: 0
-  grabDistance: 0
+  grabDistance: 2
   attackDistance: 0
   attackForce: 0
   hitDistance: 0

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -20,8 +21,10 @@ public partial class ResourceSystem : SystemBase
     private EntityCommandBuffer _ecb;
     private Entity _resourcePrefab;
     private FieldData _fieldData;
-    private ResourceData _resourceData;
-    private NativeArray<int> _stackHeights;
+    public static ResourceData _resourceData;
+    //public static NativeArray<int> _stackHeights;
+
+    [NativeDisableContainerSafetyRestriction] public static NativeList<int> _stackHeights;
     //public int[,] stackHeights;
 
     private void SetupResource()
@@ -44,7 +47,14 @@ public partial class ResourceSystem : SystemBase
         int size_x = _resourceData.gridCounts[0];
         int size_y = _resourceData.gridCounts[1];
 
-        _stackHeights = new NativeArray<int>(size_x * size_y, Allocator.Persistent);
+        //_stackHeights = new NativeArray<int>(size_x * size_y, Allocator.Persistent);
+        _stackHeights = new NativeList<int>(size_x * size_y, Allocator.Persistent);
+
+        for (int i = 0; i < (size_x * size_y); i++)
+        {
+            _stackHeights.Add(0);
+        }
+
         //_resourceData.stackHeights = new NativeArray<int>(_fieldData.size.x * _fieldData.size., Allocator.Persistent); ;
 
         Debug.Log("stackHeights: " + (size_x * size_y));
@@ -125,11 +135,13 @@ public partial class ResourceSystem : SystemBase
 
             //Debug.Log("index: " + index);
 
-            //Debug.Log("gridPos: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
+            //Debug.Log("gridPos1: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
+            //Debug.Log("gridPos1 count: " + rd.gridCounts.x);
 
             //int height = stackHeights[index];
             int height = stackHeights[index];
             //Debug.Log("height: " + height);
+            //Debug.Log("index: " + index);
 
             var pos = GetStackPos(resource.gridX, resource.gridY, height);
             var floorY = pos.y;
@@ -137,6 +149,7 @@ public partial class ResourceSystem : SystemBase
             if (resource.position.y < floorY)
             {
                 stackHeights[index]++;
+                resource.height = stackHeights[index];
                 resource.position = pos;
                 resource.velocity = float3.zero;
 

@@ -44,6 +44,7 @@ public struct Resource : IComponentData
 	//public Bee holder;
 	public float3 velocity;
 	public bool dead;
+	public int height;
 
     //public Resource(Vector3 myPosition)
     //{

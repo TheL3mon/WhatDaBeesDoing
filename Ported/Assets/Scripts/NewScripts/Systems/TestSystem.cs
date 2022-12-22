@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -15,6 +16,7 @@ public partial class TestSystem : SystemBase
 {
     private EntityQuery _blueTeamQuery;
     private EntityQuery _yellowTeamQuery;
+    private static ResourceData _resourceData;
     private Unity.Mathematics.Random _random;
     protected override void OnUpdate()
     {
@@ -26,6 +28,8 @@ public partial class TestSystem : SystemBase
         // var blueTeamEntities = _blueTeamQuery.ToEntityArray(Allocator.Temp);
         // var allBlueBees = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
         //var nativearr = allBlueBees.ToEntityArray(Allocator.TempJob);
+        //_resourceData = GetSingleton<ResourceData>();
+        _resourceData = ResourceSystem._resourceData;
 
         var blueTeamQuery = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
         var blueArr = blueTeamQuery.ToEntityArray(Allocator.Persistent);
@@ -38,11 +42,15 @@ public partial class TestSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(false);
         var resourceStatus = GetComponentDataFromEntity<Resource>(false);
 
+        var stackHeights = ResourceSystem._stackHeights;
+
         var TGRRJ = new tryGetRandomResourceJob
         {
             resources = resourceArr,
             resourceStatus = resourceStatus,
             ecb = ecb,
+            stackHeights = stackHeights,
+            resourceData = _resourceData,
             random = _random
         }.Schedule();
         TGRRJ.Complete();
@@ -54,6 +62,8 @@ public partial class TestSystem : SystemBase
             resources = resourceArr,
             resourceStatus = resourceStatus,
             positions = positions,
+            stackHeights = stackHeights,
+            resourceData = _resourceData,
             dt = Time.DeltaTime,
             ecb = ecb,
             random = _random
@@ -75,6 +85,8 @@ public partial struct tryGetRandomResourceJob : IJobEntity
 
     public NativeArray<Entity> resources;
     public ComponentDataFromEntity<Resource> resourceStatus;
+    public NativeList<int> stackHeights;
+    public ResourceData resourceData;
 
 
     public EntityCommandBuffer ecb;
@@ -88,7 +100,46 @@ public partial struct tryGetRandomResourceJob : IJobEntity
         var resource = resources[random.NextInt(resources.Length)];
         var status = resourceStatus[resource];
 
-        if(status.stacked == true && status.topOfStack == true)
+        //var t = stackHeights;
+
+        //int index = resource.gridX + resource.gridY * rd.gridCounts.x;
+        int index = status.gridX + status.gridY * resourceData.gridCounts.x;
+
+        var stackHeight = stackHeights[index];
+
+        //int max = 0;
+
+        /*
+        for (int i = 0; i < stackHeights.Length; i++) 
+        {
+            var v = stackHeights[i];
+            if (v > max)
+            {
+                max = v;
+            }
+        }
+        */
+
+        //Debug.Log("max height: " + max);
+
+        var resourceHeight = status.height;
+
+        //Debug.Log("gridPos2: (" + status.gridX + ", " + status.gridY + "). index: (" + index + "). heights: (" + resourceHeight + ", " + stackHeight+")");
+
+        if (resourceHeight == stackHeight)
+        {
+            bee.resourceTarget = resource;
+            ecb.AddComponent(e, new CollectingTag());
+            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+        }
+        else
+        {
+            bee.resourceTarget = Entity.Null;
+            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+        }
+
+        /*
+        if (status.stacked == true && status.topOfStack == true)
         {
             bee.resourceTarget = resource;
             ecb.AddComponent(e, new CollectingTag());
@@ -97,10 +148,9 @@ public partial struct tryGetRandomResourceJob : IJobEntity
             bee.resourceTarget = resource;
             ecb.AddComponent(e, new CollectingTag());
             ecb.RemoveComponent<TryGetRandomResourceTag>(e);
-        } else
+        } else*/
+
         {
-            bee.resourceTarget = Entity.Null;
-            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
         }
     }
 }
@@ -113,8 +163,10 @@ public partial struct collectResourceJob : IJobEntity
     public NativeArray<Entity> resources;
     public ComponentDataFromEntity<Resource> resourceStatus;
     public ComponentDataFromEntity<Translation> positions;
+    public ResourceData resourceData;
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
+    public NativeList<int> stackHeights;
     public float dt;
 
     public EntityCommandBuffer ecb;
@@ -134,7 +186,7 @@ public partial struct collectResourceJob : IJobEntity
         bool holderPartOfBlueTeam = false;
         bool holderPartOfYellowTeam = false;
 
-        Debug.Log("In collcting job");
+        //Debug.Log("In collcting job");
 
         if (resources.Length == 0)
         { return; }
@@ -153,15 +205,21 @@ public partial struct collectResourceJob : IJobEntity
                 bee.resourceTarget = Entity.Null;
                 return;
             }
-            if (status.stacked == true && status.topOfStack == false) bee.resourceTarget = Entity.Null;
-            else if (status.stacked == true && status.topOfStack == false)
+            int resourceIndex = status.gridX + status.gridY * resourceData.gridCounts.x;
+            var stackHeight = stackHeights[resourceIndex];
+            var resourceHeight = status.height;
+
+
+            if (stackHeight != resourceHeight) 
+                bee.resourceTarget = Entity.Null;
+            else
             {
                 var delta = positions[resource].Value - positions[e].Value;
                 float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
                 if (sqrDist > beeData.grabDistance * beeData.grabDistance)
                 {
                     Debug.Log("Moving towards resource");
-                    velocity.Linear += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)) * 300);
+                    velocity.Linear += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
                 }
                 else
                 {
@@ -176,7 +234,7 @@ public partial struct collectResourceJob : IJobEntity
         {
             if (status.holder == e)
             {
-                float3 targetPos = new float3(100, 20, 100);
+                float3 targetPos = new float3(100, 20, 100); //TODO should find its own field
                 //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
                 var delta = targetPos - positions[e].Value;
                 var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
@@ -187,7 +245,6 @@ public partial struct collectResourceJob : IJobEntity
                     //var beeResourceStatus = resourceStatus[bee.resourceTarget];
                     //status.holder = Entity.Null;
                 }
-                //do stuff
             }
             else if (beePartOfBlueTeam && holderPartOfYellowTeam) bee.enemyTarget = status.holder;
             else if (beePartOfYellowTeam && holderPartOfBlueTeam) bee.enemyTarget = status.holder;

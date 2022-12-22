@@ -467,46 +467,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: gridSize.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: gridSize.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: gridCounts.x
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: gridCounts.y
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: minGridPos.x
-      value: -50
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: minGridPos.y
-      value: -10
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: resourceSize
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3346073098161235699, guid: 82d5c8b62e49fa540b75b8b971738364,
-        type: 3}
-      propertyPath: beesPerResource
-      value: 10
-      objectReference: {fileID: 0}
     - target: {fileID: 3346073098161235703, guid: 82d5c8b62e49fa540b75b8b971738364,
         type: 3}
       propertyPath: m_Name
