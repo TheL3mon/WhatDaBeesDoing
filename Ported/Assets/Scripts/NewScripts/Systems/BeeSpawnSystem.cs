@@ -9,6 +9,8 @@ using Random = Unity.Mathematics.Random;
 using static UnityEngine.Rendering.DebugUI;
 using System;
 using UnityEngine.UIElements;
+using Unity.Collections;
+using Unity.Jobs;
 
 public partial class BeeSpawnSystem : SystemBase
 {
@@ -19,12 +21,13 @@ public partial class BeeSpawnSystem : SystemBase
     private FieldData _fieldData;
     private ResourceData _resourceData;
     private EntityCommandBuffer _ecb;
-    private float3 minPos = new float3(-50, 10, -50);
-    private float3 maxPos = new float3(50, 10, 50);
+    private float3 minPos = new float3(-50, 100, -15);
+    private float3 maxPos = new float3(50, 100, 15);
     private float3 zero = new float3(0, 0, 0);
     public Random _random;
     bool buttonpressed = false;
     float timer;
+    const int resourceSpawnPerFrame = 1;
 
     protected override void OnStartRunning()
     {
@@ -68,6 +71,7 @@ public partial class BeeSpawnSystem : SystemBase
         initialYellowSpawns.Complete();
         intialResourceSpawns.Complete();
         _ecb.Playback(EntityManager);
+        _ecb.Dispose();
 
     }
 
@@ -123,28 +127,45 @@ public partial class BeeSpawnSystem : SystemBase
         }
 
         // Spawn resources
-    //    var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        //var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        //EntityCommandBuffer.ParallelWriter parallelEcb = ecb2.AsParallelWriter();
 
-    //    var position = _random.NextFloat3(minPos, maxPos);
 
-    //    //Debug.Log("position: " + position);
+        //Debug.Log("position: " + position);
+        for (int i = 0; i < resourceSpawnPerFrame; i++)
+        {
+            var position = _random.NextFloat3(minPos, maxPos);
+            var resourceSpawn = new SpawnJobResource
+            {
+                ecb = ecb2,
+                resourcePrefab = _resourcePrefab,
+                fieldData = _fieldData,
+                position = position
+            }.Schedule();
+            resourceSpawn.Complete();
 
-    //    var resourceSpawn = new SpawnJobResource
-    //    {
-    //        ecb = ecb2,
-    //        resourcePrefab = _resourcePrefab,
-    //        fieldData = _fieldData,
-    //        position = position
-    //}.Schedule();
-    //    resourceSpawn.Complete();
-    //    ecb2.Playback(EntityManager);
-    //    ecb2.Dispose();
+        }
+
+
+        /*
+        var resourceSpawn = new SpawnJobResource
+        {
+            ecb = ecb2,
+            resourcePrefab = _resourcePrefab,
+            fieldData = _fieldData,
+            position = position
+        }.Schedule();
+        */
+        ecb2.Playback(EntityManager);
+        ecb2.Dispose();
 
         //_ecb.Playback(EntityManager);
 
 
     }
 }
+
 
 [BurstCompile]
 public partial struct InitialSpawnJob : IJobEntity
@@ -273,16 +294,10 @@ public partial struct SpawnJobResource : IJobEntity
     public Entity resourcePrefab;
     public float3 position;
     public FieldData fieldData;
-    //public int beesToSpawn;
-
-    //void Execute(in ResourceSpawnData resourceSpawnData)
-    //{
-    //    Debug.Log("rd spawn");
-    //}
 
     void Execute(in ResourceData resourceData)
     {
-        Debug.Log("Spawned resource");
+        //Debug.Log("Spawned resource");
         var resourceEntity = ecb.Instantiate(resourcePrefab);
 
         ecb.SetComponent(resourceEntity, new Translation
