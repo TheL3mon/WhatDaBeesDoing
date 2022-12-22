@@ -5,6 +5,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using JobRandom = Unity.Mathematics.Random;
@@ -37,6 +38,15 @@ public partial class TestSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(false);
         var resourceStatus = GetComponentDataFromEntity<Resource>(false);
 
+        var TGRRJ = new tryGetRandomResourceJob
+        {
+            resources = resourceArr,
+            resourceStatus = resourceStatus,
+            ecb = ecb,
+            random = _random
+        }.Schedule();
+        TGRRJ.Complete();
+
         var collectingJob = new collectResourceJob
         {
             blueTeam = blueArr,
@@ -53,6 +63,42 @@ public partial class TestSystem : SystemBase
         ecb.Playback(World.EntityManager);
 
 
+    }
+}
+
+
+public partial struct tryGetRandomResourceJob : IJobEntity
+{
+
+    public NativeArray<Entity> resources;
+    public ComponentDataFromEntity<Resource> resourceStatus;
+
+
+    public EntityCommandBuffer ecb;
+
+    public JobRandom random;
+
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in TryGetRandomResourceTag tag, in BeeData beeData)
+    {
+        if (resources.Length == 0) return;
+
+        var resource = resources[random.NextInt(resources.Length)];
+        var status = resourceStatus[resource];
+
+        if(status.stacked == true && status.topOfStack == true)
+        {
+            bee.resourceTarget = resource;
+            ecb.AddComponent(e, new CollectingTag());
+            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+        } else if (status.stacked == false ){
+            bee.resourceTarget = resource;
+            ecb.AddComponent(e, new CollectingTag());
+            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+        } else
+        {
+            bee.resourceTarget = Entity.Null;
+            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+        }
     }
 }
 
@@ -75,7 +121,9 @@ public partial struct collectResourceJob : IJobEntity
 
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in CollectingTag tag, in BeeData beeData)
     {
-        var resource = resources[random.NextInt(resources.Length)];
+        var target = bee.resourceTarget;
+        var index = resources.IndexOf(target);
+        var resource = resources[index];
         var status = resourceStatus[resource];
         bee.resourceTarget = resource;
         bool beePartOfBlueTeam = blueTeam.Contains(e);
@@ -85,7 +133,7 @@ public partial struct collectResourceJob : IJobEntity
 
         if (resources.Length == 0)
         { return; }
-
+        
         if (status.holder != Entity.Null)
         {
             holderPartOfBlueTeam = blueTeam.Contains(status.holder);

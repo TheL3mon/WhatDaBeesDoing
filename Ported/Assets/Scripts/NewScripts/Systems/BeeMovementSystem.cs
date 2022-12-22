@@ -229,7 +229,9 @@ public partial struct targetingJob :IJobEntity
                         }
                     } else
                     {
-                        ecb.AddComponent(e, new CollectingTag());
+                        //Try to taget a random resource
+
+                        ecb.AddComponent(e, new TryGetRandomResourceTag());
                         //Debug.Log("Missing implementation for getting a resource");
                     }
                 } 
@@ -265,6 +267,7 @@ public partial struct targetingJob :IJobEntity
                 }
                 else if (bee.resourceTarget != Entity.Null)
                 {
+                    Debug.Log("Bee has a resource target");    
                     ecb.AddComponent(e, new CollectingTag());
                 }
             }
