@@ -63,6 +63,9 @@ public partial class TestSystem : SystemBase
         ecb.Playback(World.EntityManager);
 
 
+        blueArr.Dispose();
+        yellowArr.Dispose();
+        resourceArr.Dispose();
     }
 }
 
@@ -131,6 +134,8 @@ public partial struct collectResourceJob : IJobEntity
         bool holderPartOfBlueTeam = false;
         bool holderPartOfYellowTeam = false;
 
+        Debug.Log("In collcting job");
+
         if (resources.Length == 0)
         { return; }
         
@@ -144,6 +149,7 @@ public partial struct collectResourceJob : IJobEntity
         {
             if (status.dead == true)
             {
+                Debug.Log("resource is dead");
                 bee.resourceTarget = Entity.Null;
                 return;
             }
@@ -154,7 +160,8 @@ public partial struct collectResourceJob : IJobEntity
                 float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
                 if (sqrDist > beeData.grabDistance * beeData.grabDistance)
                 {
-                    velocity.Linear += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
+                    Debug.Log("Moving towards resource");
+                    velocity.Linear += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)) * 300);
                 }
                 else
                 {
