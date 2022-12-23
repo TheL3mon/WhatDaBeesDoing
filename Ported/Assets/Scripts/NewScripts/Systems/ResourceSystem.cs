@@ -121,22 +121,26 @@ public partial class ResourceSystem : SystemBase
             resource.gridX = gridIndex[0];
             resource.gridY = gridIndex[1];
 
-            int index = resource.gridX + resource.gridY * rd.gridCounts.y;
+            int index = resource.gridX + resource.gridY * rd.gridCounts.x;
+
+            //Debug.Log("index: " + index);
 
             //Debug.Log("gridPos: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
 
             //int height = stackHeights[index];
             int height = stackHeights[index];
+            //Debug.Log("height: " + height);
 
             var pos = GetStackPos(resource.gridX, resource.gridY, height);
             var floorY = pos.y;
 
             if (resource.position.y < floorY)
             {
+                stackHeights[index]++;
                 resource.position = pos;
                 resource.velocity = float3.zero;
 
-                if (Mathf.Abs(resource.position.x) > fd.size.x * .4f)
+                if (Mathf.Abs(resource.position.x) > fd.size.x * .3f)
                 {
                     int team = 0;
                     if (resource.position.x > 0f)
@@ -145,11 +149,12 @@ public partial class ResourceSystem : SystemBase
                     }
                     var spawnBeeTag = new SpawnBeeTag();
                     spawnBeeTag.team = team;
-                    //ecb.AddComponent(resourceEntity, spawnBeeTag);
+                    ecb.AddComponent(resourceEntity, spawnBeeTag);
                     //Debug.Log("spawnBeeTag added");
                 }
+                //Debug.Log("Final pos: (" + resource.position + ") Grid coords: (" + resource.gridX + ", " + resource.gridY + ")");
+                //Debug.Log("Grid coords: " + resource.position);
 
-                stackHeights[index]++;
                 ecb.RemoveComponent(resourceEntity, typeof(FallingResourceTag));
             }
 
@@ -195,7 +200,7 @@ public partial class ResourceSystem : SystemBase
 
         void Execute(Entity resourceEntity, ref Resource resource, in SpawnBeeTag sbt)
         {
-            Debug.Log("Bee spawning should happen here");
+            //Debug.Log("Bee spawning should happen here");
 
             for (int i = 0; i < rd.beesPerResource; i++)
             {
