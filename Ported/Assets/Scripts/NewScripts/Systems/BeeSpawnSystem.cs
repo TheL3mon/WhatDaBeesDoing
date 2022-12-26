@@ -95,9 +95,7 @@ public partial class BeeSpawnSystem : SystemBase
             buttonpressed = true;
             timer = 0;
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-            //_ecb;
 
-            //Debug.Log("starting job");
             var blueBeeSpawnJob = new SpawnJob
             {
                 ecb = ecb,
@@ -109,31 +107,26 @@ public partial class BeeSpawnSystem : SystemBase
             blueBeeSpawnJob.Complete();
             ecb.Playback(EntityManager);
             ecb.Dispose();
-            //Enabled = false;
         }
         if (Input.GetKeyDown(KeyCode.S))
         {
             buttonpressed = true;
             timer = 0;
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-            //_ecb;
 
             var nextRandom = _random.NextFloat3(minPos, maxPos);
 
-            //Debug.Log("starting job");
             var YellowBeeSpawnJob = new SpawnJob
             {
                 ecb = ecb,
                 team = 1,
                 bee = _yellowTeamPrefab,
                 position = nextRandom
-                //beesToSpawn = 10
             }.Schedule();
 
             YellowBeeSpawnJob.Complete();
             ecb.Playback(EntityManager);
             ecb.Dispose();
-            //Enabled = false;
         }
         if (Input.GetKeyDown(KeyCode.R))
         {            
@@ -208,19 +201,14 @@ public partial struct SpawnJobResource : IJobEntity
 
         //Pass data from spawnData to resourceData or generate data for resource
 
-        var resource = GetResource(resourceData);
+        var resource = new Resource();
+        resource.position = position;
+        resource.height = -1;
+        resource.holderTeam = -1;
 
         var fallingResourceTag = new FallingResourceTag();
 
         ecb.AddComponent(resourceEntity, resource);
         ecb.AddComponent(resourceEntity, fallingResourceTag);
-    }
-
-    Resource GetResource(ResourceData resourceData)
-    {
-        var resource = new Resource();
-        resource.position = position;
-        resource.height = -1;
-        return resource;
     }
 }

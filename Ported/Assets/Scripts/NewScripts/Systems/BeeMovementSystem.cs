@@ -25,38 +25,6 @@ public partial class BeeMovementSystem : SystemBase
     private EntityQuery _yellowTeamQuery;
     private Unity.Mathematics.Random _random;
 
-    //public BeeData beeData = new BeeData();
-
-    protected override void OnStartRunning()
-    {
-        //bees = new List<Bee>(50000);
-        //teamsOfBees = new List<Bee>[2];
-        //pooledBees = new List<Bee>(50000);
-        //var bpb = 1;
-
-        int beesPerBatch = 1023;
-
-        //beeData.beeMatrices = new List<List<Matrix4x4>>();
-        //beeData.beeMatrices.Add(new List<Matrix4x4>());
-        //beeData.beeColors = new List<List<Vector4>>();
-        //beeData.beeColors.Add(new List<Vector4>());
-
-        //beeData.matProps = new MaterialPropertyBlock();
-        ////beeData.matProps.SetVectorArray("_Color", new float4x4[BeeData.beesPerBatch]);
-        ////beeData.matProps.SetMatrix("_Color", new Matrix4x4[BeeData.beesPerBatch]);
-        //beeData.matProps.SetMatrixArray("_Color", new Matrix4x4[beesPerBatch]);
-
-        /*
-        for (int i=0;i<2;i++) {
-			teamsOfBees[i] = new List<Bee>(25000);
-		}
-		for (int i=0;i<startBeeCount;i++) {
-			int team = i%2;
-			SpawnBee(team);
-		}
-        */
-
-    }
 
     protected override void OnUpdate()
     {
@@ -91,41 +59,14 @@ public partial class BeeMovementSystem : SystemBase
             ecb = ecb,
             random = _random
         }.Schedule();
+
         //Dynamic buffers is an option
         testingJob.Complete();
-        /*
-        var collectingJob = new collectResourceJob
-        {
-            blueTeam = blueArr,
-            yellowTeam = yellowArr,
-            resources = resourceArr,
-            resourceStatus = resourceStatus,
-            positions = positions,
-            dt = Time.DeltaTime,
-            ecb = ecb,
-            random = _random
-        }.Schedule();*/
-
-
-        //collectingJob.Complete();
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
 
         ecb.Playback(World.EntityManager);
-
-        /*
-        blueTeamEntities.Dispose();
-        allBlueBees.Dispose();
-        blueTeamQuery.Dispose();
-
-        yellowTeamQuery.Dispose();
-
-        resourceQuery.Dispose();
-        */
-
-        //var position = positions[nativearr[0]];
-        //.WithReadOnly(positions)
 
         Entities
             .WithStoreEntityQueryInField(ref _blueTeamQuery)

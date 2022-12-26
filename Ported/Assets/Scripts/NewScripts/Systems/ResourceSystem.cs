@@ -93,7 +93,7 @@ public partial class ResourceSystem : SystemBase
         ecb.Dispose();
     }
 
-    //[BurstCompile]
+    [BurstCompile]
     public partial struct FallingResourceJob : IJobEntity
     {
         public EntityCommandBuffer ecb;
