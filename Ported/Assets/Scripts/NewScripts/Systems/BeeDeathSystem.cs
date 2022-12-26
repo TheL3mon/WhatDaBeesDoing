@@ -89,6 +89,12 @@ public partial struct deleteDeadBee : IJobEntity
     {
         //bee.dead = true;
         // Debug.Log("Deleted bee");
+
+        if (bee.resourceTarget != Entity.Null)
+        {
+            Debug.Log("Bee carried resource");
+        }
+
         ecb.DestroyEntity(e);
     }
 

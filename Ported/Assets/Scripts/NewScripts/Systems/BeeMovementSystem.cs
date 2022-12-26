@@ -20,7 +20,7 @@ using System;
 
 public partial class BeeMovementSystem : SystemBase
 {
-
+    public static bool testing_InvincibleBees = true;
     private EntityQuery _blueTeamQuery;
     private EntityQuery _yellowTeamQuery;
     private Unity.Mathematics.Random _random;
@@ -264,7 +264,7 @@ public partial struct targetingJob :IJobEntity
                 {
                     if (status[bee.enemyTarget].dead)
                     {
-                        Debug.Log("dead bee");
+                        //Debug.Log("dead bee");
                         bee.enemyTarget = Entity.Null;
                     } else
                     {

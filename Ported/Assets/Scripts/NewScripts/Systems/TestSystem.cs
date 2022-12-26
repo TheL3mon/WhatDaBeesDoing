@@ -209,7 +209,7 @@ public partial struct collectResourceJob : IJobEntity
             var stackHeight = stackHeights[resourceIndex];
             var resourceHeight = status.height;
 
-            Debug.Log("gridPos2: (" + status.gridX + ", " + status.gridY + "). index: (" + index + "). heights: (" + resourceHeight + ", " + stackHeight + ")");
+            //Debug.Log("gridPos2: (" + status.gridX + ", " + status.gridY + "). index: (" + index + "). heights: (" + resourceHeight + ", " + stackHeight + ")");
 
             if (stackHeight != resourceHeight) 
                 bee.resourceTarget = Entity.Null;
@@ -219,12 +219,12 @@ public partial struct collectResourceJob : IJobEntity
                 float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
                 if (sqrDist > beeData.grabDistance * beeData.grabDistance)
                 {
-                    Debug.Log("Moving towards resource");
+                    //Debug.Log("Moving towards resource");
                     velocity.Linear += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
                 }
                 else
                 {
-                    Debug.Log("Implement logic to grab resource");
+                    //Debug.Log("Implement logic to grab resource");
                     status.holder = e;
                     status.stacked = false;
 
@@ -235,7 +235,10 @@ public partial struct collectResourceJob : IJobEntity
                     r.height = status.height;
                     r.holder = e;
 
+                    var beingHeldTag = new BeingHeldResourceTag();
+
                     ecb.SetComponent(bee.resourceTarget, r);
+                    ecb.SetComponent(bee.resourceTarget, beingHeldTag);
 
                     //reduce stack of resource
                     stackHeights[resourceIndex] -= 1;
@@ -246,7 +249,7 @@ public partial struct collectResourceJob : IJobEntity
         {
             if (status.holder == e)
             {
-                Debug.Log("Bee should be returning resource");
+                //Debug.Log("Bee should be returning resource");
                 //float3 targetPos = new float3(100, 20, 100); //TODO should find its own field
                 float3 targetPos;
 
@@ -266,7 +269,7 @@ public partial struct collectResourceJob : IJobEntity
 
                 if (Mathf.Abs(delta.x) < 10.0f)
                 {
-                    Debug.Log("Bee arrived at destination");
+                    //Debug.Log("Bee arrived at destination");
                     var r = new Resource();
                     r.position = positions[e].Value;
                     r.height = status.height;

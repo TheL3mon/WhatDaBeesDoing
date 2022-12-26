@@ -21,11 +21,8 @@ public partial class ResourceSystem : SystemBase
     private Entity _resourcePrefab;
     private FieldData _fieldData;
     public static ResourceData _resourceData;
-    //public static NativeArray<int> _stackHeights;
 
     public static NativeList<int> _stackHeights;
-    //public static NativeParallelHashMap<int, Resource> _resourceHashMap; 
-    //public int[,] stackHeights;
 
     private void SetupResource()
     {
@@ -37,7 +34,6 @@ public partial class ResourceSystem : SystemBase
         var gridCounts = new int2((int)(_fieldData.size.x/rd.resourceSize), (int)(_fieldData.size.y/rd.resourceSize));
         var gridSize = new Vector2(_fieldData.size.x/gridCounts.x, _fieldData.size.z/gridCounts.y);
         var minGridPos = new Vector2((gridCounts.x-1f)*-.5f*gridSize.x,(gridCounts.y-1f)*-.5f*gridSize.y);
-        //var stackHeights = new int[gridCounts.x,gridCounts.y];
 
         _resourceData.gridCounts = gridCounts;
         _resourceData.gridSize = gridSize;
@@ -46,17 +42,12 @@ public partial class ResourceSystem : SystemBase
         int size_x = _resourceData.gridCounts[0];
         int size_y = _resourceData.gridCounts[1];
 
-        //_stackHeights = new NativeArray<int>(size_x * size_y, Allocator.Persistent);
         _stackHeights = new NativeList<int>(size_x * size_y, Allocator.Persistent);
 
         for (int i = 0; i < (size_x * size_y); i++)
         {
             _stackHeights.Add(0);
         }
-
-        //_resourceData.stackHeights = new NativeArray<int>(_fieldData.size.x * _fieldData.size., Allocator.Persistent); ;
-
-        Debug.Log("stackHeights: " + (size_x * size_y));
     }
 
     protected override void OnStartRunning()
@@ -74,14 +65,14 @@ public partial class ResourceSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
         var dt = Time.DeltaTime;
 
         var fallingResourceJob = new FallingResourceJob
         {
             dt = dt,
-            ecb = ecb2,
+            ecb = ecb,
             rd = _resourceData,
             fd = _fieldData,
             stackHeights = _stackHeights
@@ -90,7 +81,7 @@ public partial class ResourceSystem : SystemBase
 
         var spawnBeeFromResourceJob = new SpawnBeeFromResourceJob
         {
-            ecb = ecb2,
+            ecb = ecb,
             rd = _resourceData,
             blueBee = _blueTeamPrefab,
             yellowBee = _yellowTeamPrefab
@@ -98,10 +89,8 @@ public partial class ResourceSystem : SystemBase
         }.Schedule();
         spawnBeeFromResourceJob.Complete();
 
-
-
-        ecb2.Playback(EntityManager);
-        ecb2.Dispose();
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
 
     //[BurstCompile]

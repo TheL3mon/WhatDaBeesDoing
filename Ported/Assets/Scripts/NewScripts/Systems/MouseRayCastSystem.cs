@@ -103,7 +103,7 @@ public partial class MouseRayCastSystem : SystemBase
         if(Input.GetMouseButtonUp(0))
         {
             var markerPos = GetComponent<Translation>(_marker);
-            //Debug.Log("Spawn position = " + markerPos.Value);
+            Debug.Log("Spawn position = " + markerPos.Value);
             if (markerPos.Value.z == -15)
             {
                 markerPos.Value.z += 1;
