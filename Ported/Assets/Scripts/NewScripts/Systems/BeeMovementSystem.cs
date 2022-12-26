@@ -229,18 +229,30 @@ public partial struct targetingJob :IJobEntity
     {
         //if (bee.dead == false)
         //{
-            if(blueTeam.Contains(e))
+            //if(blueTeam.Contains(e))
             {
                 if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
                 {
                     if(random.NextFloat(1.0f) < beeData.aggression)
                     {
-                        if(yellowTeam.Length > 0)
+                        if (blueTeam.Contains(e))
                         {
-                            var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
-                            bee.enemyTarget = randomyellow;
+                            if (yellowTeam.Length > 0)
+                            {
+                                var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
+                                bee.enemyTarget = randomyellow;
+                            }
+
+                        } else if (yellowTeam.Contains(e))
+                        {
+                            if (blueTeam.Length > 0)
+                            {
+                                var randomblue = blueTeam[random.NextInt(blueTeam.Length)];
+                                bee.enemyTarget = randomblue;
+                            }
                         }
-                    } else
+                    } 
+                    else
                     {
                         //Try to taget a random resource
 

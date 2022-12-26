@@ -135,12 +135,12 @@ MonoBehaviour:
   speedStretch: 0
   rotationStiffness: 0
   aggression: 0.5
-  chaseForce: 0
-  carryForce: 0
+  chaseForce: 50
+  carryForce: 25
   grabDistance: 2
-  attackDistance: 0
-  attackForce: 0
-  hitDistance: 0
+  attackDistance: 4
+  attackForce: 500
+  hitDistance: 1.96
   maxSpawnSpeed: 0
   startBeeCount: 0
 --- !u!114 &7992802162242733060
