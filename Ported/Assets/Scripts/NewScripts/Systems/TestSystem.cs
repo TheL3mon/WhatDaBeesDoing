@@ -235,10 +235,7 @@ public partial struct collectResourceJob : IJobEntity
                     r.height = status.height;
                     r.holder = e;
 
-                    var beingHeldTag = new BeingHeldResourceTag();
-
                     ecb.SetComponent(bee.resourceTarget, r);
-                    ecb.SetComponent(bee.resourceTarget, beingHeldTag);
 
                     //reduce stack of resource
                     stackHeights[resourceIndex] -= 1;
