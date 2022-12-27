@@ -43,25 +43,44 @@ public partial class ParticleSystem : SystemBase
         // SPAWNFLASH test
         if (Input.GetKeyDown(KeyCode.F))
 		{
-            // this random can only be called outside of Jobs apparently
-            UnityEngine.Color bloodColor = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
-
-            var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-            var spawnFlashSpawnJob = new ParticleSpawnJob
-            {
-                ecb = ecb,
-                particle = _particlePrefab,
-                position = new float3(0, 0, 0), // TEST VALUE
-                particleType = ParticleType.Blood, // TEST VALUE
-                color = bloodColor,
-                count = 1
-            }.Schedule();
-
-            spawnFlashSpawnJob.Complete();
-            ecb.Playback(EntityManager);
-            ecb.Dispose();
+            SpawnParticles();
         }
 	}
+
+    public void SpawnParticles()
+    {
+        // TEST VALUES
+        ParticleType _particleType = ParticleType.SpawnFlash;
+        UnityEngine.Color _bloodColor = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
+        float _size = 0;
+        if (_particleType == ParticleType.Blood)
+        {
+            Debug.Log("BLOOD");
+            _size = UnityEngine.Random.Range(0.1f, 0.2f);
+        }
+        else if (_particleType == ParticleType.SpawnFlash)
+        {
+            _size = UnityEngine.Random.Range(1f, 2f);
+        }
+        float3 _position = new float3(5, 0, 0);
+        //
+
+        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        var spawnFlashSpawnJob = new ParticleSpawnJob
+        {
+            ecb = ecb,
+            particle = _particlePrefab,
+            position = _position,
+            size = _size,
+            particleType = _particleType,
+            color = _bloodColor,
+            count = 1
+        }.Schedule();
+
+        spawnFlashSpawnJob.Complete();
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
+    }
 
     [BurstCompile]
     public partial struct ParticleSpawnJob : IJobEntity
@@ -69,10 +88,11 @@ public partial class ParticleSystem : SystemBase
         public EntityCommandBuffer ecb;
         public Entity particle;
         public float3 position;
+        public float size;
         public ParticleType particleType;
-		public int count;
-
         public UnityEngine.Color color;
+        public int count;
+
 
         void Execute(in ParticleData particleData)
         {
@@ -86,9 +106,22 @@ public partial class ParticleSystem : SystemBase
                     Value = position
                 };
 
+                var newScale = new NonUniformScale
+                {
+                    Value = new float3(size, size, size)
+                };
+
                 if (particleType == ParticleType.SpawnFlash)
                 {
                     color = UnityEngine.Color.white;
+
+                    ParticleSpawnTag spawnTag = new ParticleSpawnTag();
+                    ecb.AddComponent(newParticle, spawnTag);
+                }
+                else if (particleType == ParticleType.Blood)
+                {
+                    ParticleBloodTag bloodTag = new ParticleBloodTag();
+                    ecb.AddComponent(newParticle, bloodTag);
                 }
 
                 var newColor = new ParticleColorComponent
@@ -97,6 +130,7 @@ public partial class ParticleSystem : SystemBase
                 };
 
                 ecb.SetComponent(newParticle, newTranslation);
+                ecb.AddComponent(newParticle, newScale);
                 ecb.SetComponent(newParticle, newColor);
             }
         }
