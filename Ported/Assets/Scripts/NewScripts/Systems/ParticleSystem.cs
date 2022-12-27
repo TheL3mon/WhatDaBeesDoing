@@ -43,26 +43,42 @@ public partial class ParticleSystem : SystemBase
         // SPAWNFLASH test
         if (Input.GetKeyDown(KeyCode.F))
 		{
-            SpawnParticles();
+            SpawnParticles(new float3(5, 0, 0), ParticleType.Blood, new float3(3,2,1));
         }
 	}
 
-    public void SpawnParticles()
+    public void SpawnParticles(float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
     {
         // TEST VALUES
-        ParticleType _particleType = ParticleType.SpawnFlash;
         UnityEngine.Color _bloodColor = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
         float _size = 0;
-        if (_particleType == ParticleType.Blood)
+        float3 _velocity = 0;
+        float _lifeDuration = 0;
+        if (_type == ParticleType.Blood)
         {
             Debug.Log("BLOOD");
             _size = UnityEngine.Random.Range(0.1f, 0.2f);
+            _velocity = _vel + (float3)UnityEngine.Random.insideUnitSphere * _velocityJitter;
+            _lifeDuration = UnityEngine.Random.Range(3f, 5f);
         }
-        else if (_particleType == ParticleType.SpawnFlash)
+        else if (_type == ParticleType.SpawnFlash)
         {
             _size = UnityEngine.Random.Range(1f, 2f);
+            _velocity = (float3)UnityEngine.Random.insideUnitSphere * 5f;
+            _lifeDuration = UnityEngine.Random.Range(.25f, .5f);
         }
-        float3 _position = new float3(5, 0, 0);
+
+        Particle _particle = new Particle
+        {
+            type = _type,
+            position = _position,
+            velocity = _velocity,
+            size = _size,
+            life = 1f,
+            lifeDuration = _lifeDuration,
+            stuck = false,
+            cachedMatrix = Matrix4x4.identity // TEMPORARY
+        };
         //
 
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -70,9 +86,7 @@ public partial class ParticleSystem : SystemBase
         {
             ecb = ecb,
             particle = _particlePrefab,
-            position = _position,
-            size = _size,
-            particleType = _particleType,
+            particleValues = _particle,
             color = _bloodColor,
             count = 1
         }.Schedule();
@@ -87,9 +101,7 @@ public partial class ParticleSystem : SystemBase
     {
         public EntityCommandBuffer ecb;
         public Entity particle;
-        public float3 position;
-        public float size;
-        public ParticleType particleType;
+        public Particle particleValues;
         public UnityEngine.Color color;
         public int count;
 
@@ -103,22 +115,22 @@ public partial class ParticleSystem : SystemBase
 
                 var newTranslation = new Translation
                 {
-                    Value = position
+                    Value = particleValues.position
                 };
 
                 var newScale = new NonUniformScale
                 {
-                    Value = new float3(size, size, size)
+                    Value = particleValues.size
                 };
 
-                if (particleType == ParticleType.SpawnFlash)
+                if (particleValues.type == ParticleType.SpawnFlash)
                 {
                     color = UnityEngine.Color.white;
 
                     ParticleSpawnTag spawnTag = new ParticleSpawnTag();
                     ecb.AddComponent(newParticle, spawnTag);
                 }
-                else if (particleType == ParticleType.Blood)
+                else if (particleValues.type == ParticleType.Blood)
                 {
                     ParticleBloodTag bloodTag = new ParticleBloodTag();
                     ecb.AddComponent(newParticle, bloodTag);
@@ -129,6 +141,7 @@ public partial class ParticleSystem : SystemBase
                     Value = color
                 };
 
+                ecb.SetComponent(newParticle, particleValues);
                 ecb.SetComponent(newParticle, newTranslation);
                 ecb.AddComponent(newParticle, newScale);
                 ecb.SetComponent(newParticle, newColor);
