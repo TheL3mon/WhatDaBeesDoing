@@ -21,28 +21,16 @@ public struct ParticleData : IComponentData
     public int activeBatch; // = 0;
     public int activeBatchSize; // = 0;
 
-    //static ParticleManager instance;
-
     public int instancesPerBatch; // = 1023;
     public int maxParticleCount; // = 10 * instancesPerBatch;
 
     //public MaterialPropertyBlock matProps;
+
+    public Entity particlePrefab;
 }
+
 public enum ParticleType
 {
     Blood,
     SpawnFlash
-}
-
-public struct BeeParticle : IComponentData
-{
-    public ParticleType type;
-    public float3 position;
-    public float3 velocity;
-    public float3 size;
-    public float life;
-    public float lifeDuration;
-    public float4 color;
-    public bool stuck;
-    public Matrix4x4 cachedMatrix;
 }
