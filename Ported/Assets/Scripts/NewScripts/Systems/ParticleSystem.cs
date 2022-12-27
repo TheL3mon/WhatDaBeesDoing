@@ -4,6 +4,7 @@ using System.Drawing;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Physics;
@@ -11,9 +12,11 @@ using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.XR;
+using static ResourceSystem;
 using static Unity.Entities.EntityQueryBuilder;
 using static UnityEditor.PlayerSettings;
 using static UnityEngine.ParticleSystem;
+using static UnityEngine.Rendering.DebugUI;
 
 public partial class ParticleSystem : SystemBase
 {
@@ -21,16 +24,13 @@ public partial class ParticleSystem : SystemBase
     public Unity.Mathematics.Random random;
 
     public ParticleData _particleData;
+    public FieldData _fieldData;
     public Entity _particlePrefab;
-
-    //protected override void OnCreate()
-    //{
-    //    base.OnCreate();
-    //}
 
     protected override void OnStartRunning()
     {
         _particleData = GetSingleton<ParticleData>();
+        _fieldData = GetSingleton<FieldData>();
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
 
         random.InitState(6969);
@@ -38,16 +38,29 @@ public partial class ParticleSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        timer += Time.DeltaTime;
-        
-        // SPAWNFLASH test
+        timer = Time.DeltaTime;
+
+        var _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        // TEST SPAWN
         if (Input.GetKeyDown(KeyCode.F))
 		{
-            SpawnParticles(new float3(5, 0, 0), ParticleType.Blood, new float3(3,2,1));
+            // last property (velocity) should be set to -> bee.velocity * .35f
+            SpawnParticles(_ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1,-10,1));
         }
-	}
 
-    public void SpawnParticles(float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
+        var _ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        var particleBehaviorJob = new ParticleBehaviorJob
+        {
+            ecb = _ecb2,
+            fieldData = _fieldData,
+            deltaTime = timer
+        }.Schedule();
+        particleBehaviorJob.Complete();
+        _ecb2.Playback(EntityManager);
+        _ecb2.Dispose();
+    }
+
+    public void SpawnParticles(EntityCommandBuffer _ecb, float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
     {
         // TEST VALUES
         UnityEngine.Color _bloodColor = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
@@ -81,10 +94,9 @@ public partial class ParticleSystem : SystemBase
         };
         //
 
-        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         var spawnFlashSpawnJob = new ParticleSpawnJob
         {
-            ecb = ecb,
+            ecb = _ecb,
             particle = _particlePrefab,
             particleValues = _particle,
             color = _bloodColor,
@@ -92,8 +104,8 @@ public partial class ParticleSystem : SystemBase
         }.Schedule();
 
         spawnFlashSpawnJob.Complete();
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
+        _ecb.Playback(EntityManager);
+        _ecb.Dispose();
     }
 
     [BurstCompile]
@@ -104,7 +116,6 @@ public partial class ParticleSystem : SystemBase
         public Particle particleValues;
         public UnityEngine.Color color;
         public int count;
-
 
         void Execute(in ParticleData particleData)
         {
@@ -135,6 +146,8 @@ public partial class ParticleSystem : SystemBase
                     ParticleBloodTag bloodTag = new ParticleBloodTag();
                     ecb.AddComponent(newParticle, bloodTag);
                 }
+                ParticleTag particleTag = new ParticleTag();
+                ecb.AddComponent(newParticle, particleTag);
 
                 var newColor = new ParticleColorComponent
                 {
@@ -145,6 +158,87 @@ public partial class ParticleSystem : SystemBase
                 ecb.SetComponent(newParticle, newTranslation);
                 ecb.AddComponent(newParticle, newScale);
                 ecb.SetComponent(newParticle, newColor);
+            }
+        }
+    }
+
+    public partial struct ParticleBehaviorJob : IJobEntity
+    {
+        public EntityCommandBuffer ecb;
+        public FieldData fieldData;
+        public float deltaTime;
+
+        void Execute(Entity particleEntity, ref Particle particle, in ParticleTag particleTag)
+        {
+            if (!particle.stuck)
+            {
+                particle.velocity += new float3(0,-1,0) * (fieldData.gravity * deltaTime);
+                particle.position += particle.velocity * deltaTime;
+
+                if (System.Math.Abs(particle.position.x) > fieldData.size.x * .5f)
+                {
+                    particle.position.x = fieldData.size.x * .5f * Mathf.Sign(particle.position.x);
+                    float splat = Mathf.Abs(particle.velocity.x * .3f) + 1f;
+                    particle.size.y *= splat;
+                    particle.size.z *= splat;
+                    particle.stuck = true;
+                }
+                if (System.Math.Abs(particle.position.y) > fieldData.size.y * .5f)
+                {
+                    particle.position.y = fieldData.size.y * .5f * Mathf.Sign(particle.position.y);
+                    float splat = Mathf.Abs(particle.velocity.y * .3f) + 1f;
+                    particle.size.z *= splat;
+                    particle.size.x *= splat;
+                    particle.stuck = true;
+                }
+                if (System.Math.Abs(particle.position.z) > fieldData.size.z * .5f)
+                {
+                    particle.position.z = fieldData.size.z * .5f * Mathf.Sign(particle.position.z);
+                    float splat = Mathf.Abs(particle.velocity.z * .3f) + 1f;
+                    particle.size.x *= splat;
+                    particle.size.y *= splat;
+                    particle.stuck = true;
+                }
+
+
+                Quaternion rotation = Quaternion.identity;
+                float3 scale = particle.size * particle.life;
+                float magnitude = 0;
+                float pvX = particle.velocity.x;
+                float pvY = particle.velocity.y;
+                float pvZ = particle.velocity.z;
+                float speedStretch = 0.25f; // this was set by default in the original
+                if (particle.type == ParticleType.Blood)
+                {
+                    rotation = Quaternion.LookRotation(particle.velocity);
+                    // magnitude = sqrt(x*x+y*y+z*z)
+                    magnitude = (pvX * pvX + pvY * pvY + pvZ * pvZ);
+                    scale.z *= 1f + magnitude * speedStretch;
+                }
+            }
+
+            ecb.SetComponent(particleEntity, new Translation
+            {
+                Value = particle.position
+            });
+
+            ecb.SetComponent(particleEntity, new NonUniformScale
+            {
+                Value = particle.size
+            });
+            
+            particle.life -= deltaTime / particle.lifeDuration;
+            //particle.color.a = particle.life;
+            //ecb.SetComponent(particleEntity, new ParticleColorComponent
+            //{
+            //    Value = particle.color
+            //});
+
+            ecb.SetComponent(particleEntity, particle);
+
+            if (particle.life < 0f)
+            {
+                ecb.DestroyEntity(particleEntity);
             }
         }
     }
