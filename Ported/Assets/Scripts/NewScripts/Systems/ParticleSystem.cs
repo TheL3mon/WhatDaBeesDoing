@@ -94,7 +94,7 @@ public partial class ParticleSystem : SystemBase
         };
         //
 
-        var spawnFlashSpawnJob = new ParticleSpawnJob
+        var spawnParticleJob = new ParticleSpawnJob
         {
             ecb = _ecb,
             particle = _particlePrefab,
@@ -103,7 +103,7 @@ public partial class ParticleSystem : SystemBase
             count = 1
         }.Schedule();
 
-        spawnFlashSpawnJob.Complete();
+        spawnParticleJob.Complete();
         _ecb.Playback(EntityManager);
         _ecb.Dispose();
     }
@@ -121,7 +121,7 @@ public partial class ParticleSystem : SystemBase
         {
             for (int i = 0; i < count; i++)
             {
-                Debug.Log("BOFA DEEZ PARTICLE NUTS");
+                //Debug.Log("BOFA DEEZ PARTICLE NUTS");
                 var newParticle = ecb.Instantiate(particle);
 
                 var newTranslation = new Translation
@@ -149,6 +149,7 @@ public partial class ParticleSystem : SystemBase
                 ParticleTag particleTag = new ParticleTag();
                 ecb.AddComponent(newParticle, particleTag);
 
+                particleValues.color = color;
                 var newColor = new ParticleColorComponent
                 {
                     Value = color
@@ -227,12 +228,15 @@ public partial class ParticleSystem : SystemBase
                 Value = particle.size
             });
             
-            particle.life -= deltaTime / particle.lifeDuration;
-            //particle.color.a = particle.life;
-            //ecb.SetComponent(particleEntity, new ParticleColorComponent
+            //if (particle.stuck)
             //{
-            //    Value = particle.color
-            //});
+                particle.life -= deltaTime / particle.lifeDuration;
+                particle.color.a = particle.life;
+                ecb.SetComponent(particleEntity, new ParticleColorComponent
+                {
+                    Value = particle.color
+                });
+            //}
 
             ecb.SetComponent(particleEntity, particle);
 
