@@ -141,28 +141,8 @@ public partial struct collectResourceJob : IJobEntity
         int beeTeam = bee.team;
         int resourceHolderTeam = status.holderTeam;
 
-        bool beePartOfBlueTeam = false;
-
-        if (bee.team == 0)
-        {
-            beePartOfBlueTeam = true;
-        }
-
-        bool beePartOfYellowTeam = !beePartOfBlueTeam;
-
-        //bool holderPartOfBlueTeam = false;
-        //bool holderPartOfYellowTeam = false;
-
-        //Debug.Log("In collcting job");
-
         if (resources.Length == 0)
         { return; }
-        
-        if (status.holder != Entity.Null)
-        {
-            //holderPartOfBlueTeam = blueTeam.Contains(status.holder);
-            //holderPartOfYellowTeam = yellowTeam.Contains(status.holder);
-        }
 
         if (status.holder == Entity.Null)
         {
@@ -252,9 +232,7 @@ public partial struct collectResourceJob : IJobEntity
                 }
             }
             else if (resourceHolderTeam != -1 && beeTeam != resourceHolderTeam) bee.enemyTarget = status.holder;
-            //else if (beePartOfYellowTeam && holderPartOfBlueTeam) bee.enemyTarget = status.holder;
             else if (beeTeam == resourceHolderTeam) bee.resourceTarget = Entity.Null;
         }
-
     }
 }
