@@ -22,6 +22,7 @@ using Mono.Cecil;
 using Unity.Entities.UniversalDelegates;
 using static UnityEngine.Rendering.DebugUI;
 using System.Resources;
+using System.Reflection;
 
 public partial class BeeMovementSystem : SystemBase
 {
@@ -248,7 +249,12 @@ public partial struct targetingJob : IJobEntity
             }
             else if (bee.enemyTarget != Entity.Null)
             {
-                if (status[bee.enemyTarget].dead)
+                if (blueTeam.IndexOf(bee.enemyTarget) == -1 && yellowTeam.IndexOf(bee.enemyTarget) == -1)
+                {
+                    Debug.Log("Bee target removed");
+                    bee.enemyTarget = Entity.Null;
+                }
+                else if (status[bee.enemyTarget].dead)
                 {
                     //Debug.Log("dead bee");
                     bee.enemyTarget = Entity.Null;
