@@ -20,6 +20,8 @@ using System;
 using static UnityEngine.GraphicsBuffer;
 using Mono.Cecil;
 using Unity.Entities.UniversalDelegates;
+using static UnityEngine.Rendering.DebugUI;
+using System.Resources;
 
 public partial class BeeMovementSystem : SystemBase
 {
@@ -27,6 +29,12 @@ public partial class BeeMovementSystem : SystemBase
     private EntityQuery _blueTeamQuery;
     private EntityQuery _yellowTeamQuery;
     private Unity.Mathematics.Random _random;
+    private FieldData _fieldData;
+
+    protected override void OnStartRunning()
+    {
+        _fieldData = GetSingleton<FieldData>();
+    }
 
 
     protected override void OnUpdate()
@@ -64,9 +72,16 @@ public partial class BeeMovementSystem : SystemBase
             ecb = ecb,
             random = _random
         }.Schedule();
+        testingJob.Complete();
+
+        var containJob = new containmentJob
+        {
+            field = _fieldData
+        }.Schedule();
+
 
         //Dynamic buffers is an option
-        testingJob.Complete();
+        containJob.Complete();
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
@@ -146,7 +161,35 @@ public partial class BeeMovementSystem : SystemBase
 }
 
 
+public partial struct containmentJob : IJobEntity
+{
+    public FieldData field;
 
+    void Execute(Entity e, ref Translation trans, ref PhysicsVelocity velocity, in BeeData data)
+    {
+        if (System.Math.Abs(trans.Value.x) > field.size.x * .48f)
+        {
+            trans.Value.x = (field.size.x * .48f) * Mathf.Sign(trans.Value.x);
+            velocity.Linear.x *= -.5f;
+            velocity.Linear.y *= .8f;
+            velocity.Linear.z *= .8f;
+        }
+        if (System.Math.Abs(trans.Value.z) > field.size.z * .48f)
+        {
+            trans.Value.z = (field.size.z * .48f) * Mathf.Sign(trans.Value.z);
+            velocity.Linear.z *= -.5f;
+            velocity.Linear.x *= .8f;
+            velocity.Linear.y *= .8f;
+        }
+        if (System.Math.Abs(trans.Value.y) > field.size.y * .48f)
+        {
+            trans.Value.y = (field.size.y * .48f) * Mathf.Sign(trans.Value.y);
+            velocity.Linear.y *= -.5f;
+            velocity.Linear.z *= .8f;
+            velocity.Linear.x *= .8f;
+        }
+    }
+}
 public partial struct targetingJob : IJobEntity
 {
     public NativeArray<Entity> blueTeam;
