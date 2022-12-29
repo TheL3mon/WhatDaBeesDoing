@@ -17,6 +17,13 @@ public struct Bee : IComponentData
     public bool isHoldingResource;
 
     public float3 beeScale;
+    public float size;
+    public float3 smoothPosition;
+    public float3 smoothDirection;
+
+    public float4x4 transform;
+
+
     //public Matrix4x4 beeMatrix; //Matrix that is used for transforming the bee.
     //FIXME In original version they use batching, is necessary in our case? Is batching automatic in DOTS?
 
