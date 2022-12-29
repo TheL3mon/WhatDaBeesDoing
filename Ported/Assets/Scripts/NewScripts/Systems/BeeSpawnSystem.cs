@@ -175,7 +175,7 @@ public partial struct SpawnJob : IJobEntity
                 Value = position
             };
 
-            ParticleSystem._instance.InstantiateSpawnFlashParticle(ecb, position, new float3(1, -10, 1));
+           // ParticleSystem._instance.InstantiateSpawnFlashParticle(ecb, position, new float3(1, -10, 1));
 
             ecb.SetComponent(newBee, newTranslation);
         }
