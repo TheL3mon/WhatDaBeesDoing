@@ -39,6 +39,10 @@ public partial class BeeDeathSystem : SystemBase
         var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
         var deadArr = deadQuery.ToEntityArray(Allocator.Persistent);
 
+
+        var beesQuery = GetEntityQuery(ComponentType.ReadWrite<Bee>());
+        var beesArr = beesQuery.ToEntityArray(Allocator.Persistent);
+
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
         var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
 
@@ -54,8 +58,10 @@ public partial class BeeDeathSystem : SystemBase
             {
                 ecb = ecb,
                 deadBees = deadArr,
+                bees = beesArr,
                 resources = resourceArr,
                 resourceStatus = resourceStatus,
+                beeStatuses = beeStatus,
                 positions = positions,
                 fd = _fieldData
             }.Schedule();
@@ -75,6 +81,7 @@ public partial class BeeDeathSystem : SystemBase
 
         ecb.Dispose();
         deadArr.Dispose();
+        beesArr.Dispose();
         resourceArr.Dispose();
 
     }
@@ -89,17 +96,20 @@ public partial struct deadBeeJob : IJobEntity
     public EntityCommandBuffer ecb;
     public NativeArray<Entity> deadBees;
     public NativeArray<Entity> resources;
+    public NativeArray<Entity> bees;
     public ComponentDataFromEntity<Resource> resourceStatus;
+    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> beeStatuses;
     public ComponentDataFromEntity<Translation> positions;
     public FieldData fd;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in DeadTag tag)
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity)
     {
-        var oldvelo = velocity.Linear;
-        velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
 
         if (deadBees.Contains(e))
         {
+            var oldvelo = velocity.Linear;
+            velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
+
             bee.dead = true;
 
             var targetResourceIndex = resources.IndexOf(bee.resourceTarget);
@@ -119,6 +129,7 @@ public partial struct deadBeeJob : IJobEntity
                     r.position = positions[e].Value;
                     r.height = -1;
                     r.holderTeam = -1;
+                    r.holder = Entity.Null;
 
                     var fallingResourceTag = new FallingResourceTag();
 
@@ -160,7 +171,8 @@ public partial struct deleteDeadBee : IJobEntity
         {
             Value = scale
         };
-        ecb.AddComponent(e, newScale);
+
+        ecb.SetComponent(e, newScale);
 
 
         if (bee.deathTimer < 0)

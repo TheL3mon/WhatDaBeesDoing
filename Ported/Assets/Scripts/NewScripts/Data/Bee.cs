@@ -16,6 +16,8 @@ public struct Bee : IComponentData
     public bool isAttacking;
     public bool isHoldingResource;
 
+    public uint seed;
+
     public float3 beeScale;
     public float size;
     public float3 smoothPosition;

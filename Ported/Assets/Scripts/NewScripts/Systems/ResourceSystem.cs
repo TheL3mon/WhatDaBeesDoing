@@ -188,7 +188,7 @@ public partial class ResourceSystem : SystemBase
         public ResourceData rd;
         public Entity blueBee;
         public Entity yellowBee;
-
+        public uint seed;
         void Execute(Entity resourceEntity, ref Resource resource, in SpawnBeeTag sbt)
         {
             //Debug.Log("Bee spawning should happen here");
@@ -207,7 +207,15 @@ public partial class ResourceSystem : SystemBase
                     Value = resource.position
                 };
 
+                var newScale = new NonUniformScale
+                {
+                    Value = new float3(1)
+                };
+
+
                 ecb.SetComponent(newBee, newTranslation);
+                //ecb.SetComponent(newBee, new Bee { seed = seed });
+                ecb.AddComponent(newBee, newScale);
                 ecb.RemoveComponent(resourceEntity, typeof(SpawnBeeTag));
 
             }

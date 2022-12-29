@@ -11,6 +11,7 @@ using System;
 using UnityEngine.UIElements;
 using Unity.Collections;
 using Unity.Jobs;
+using static UnityEngine.ParticleSystem;
 
 public partial class BeeSpawnSystem : SystemBase
 {
@@ -49,7 +50,8 @@ public partial class BeeSpawnSystem : SystemBase
                 ecb = _ecb,
                 team = 0,
                 bee = _blueTeamPrefab,
-                position = nextRandom
+                position = nextRandom,
+                seed = _random.NextUInt()
             }.Schedule();
             blueSpawn.Complete();
         }
@@ -62,7 +64,8 @@ public partial class BeeSpawnSystem : SystemBase
                 ecb = _ecb,
                 team = 1,
                 bee = _yellowTeamPrefab,
-                position = nextRandom
+                position = nextRandom,
+                seed = _random.NextUInt()
             }.Schedule();
             yellowSpawn.Complete();
         }
@@ -101,7 +104,8 @@ public partial class BeeSpawnSystem : SystemBase
                 ecb = ecb,
                 team = 0,
                 bee = _blueTeamPrefab,
-                position = _random.NextFloat3(minPos, maxPos)
+                position = _random.NextFloat3(minPos, maxPos),
+                seed = _random.NextUInt()
             }.Schedule();
 
             blueBeeSpawnJob.Complete();
@@ -121,7 +125,8 @@ public partial class BeeSpawnSystem : SystemBase
                 ecb = ecb,
                 team = 1,
                 bee = _yellowTeamPrefab,
-                position = nextRandom
+                position = nextRandom,
+                seed = _random.NextUInt()
             }.Schedule();
 
             YellowBeeSpawnJob.Complete();
@@ -158,6 +163,7 @@ public partial struct SpawnJob : IJobEntity
 {
     public EntityCommandBuffer ecb;
     public int team;
+    public uint seed;
     public Entity bee;
     public float3 position;
     //public int beesToSpawn;
@@ -169,15 +175,26 @@ public partial struct SpawnJob : IJobEntity
             //Debug.Log("Bee spawn should happen!");
             var newBee = ecb.Instantiate(bee);
 
+            var newScale = new NonUniformScale
+            {
+                Value = new float3(1)
+            };
+
             //position.x += 2 + i;
             var newTranslation = new Translation
             {
                 Value = position
             };
 
+            //ecb.SetComponent(newBee, new Bee
+            //{
+            //    seed = seed
+            //});
+
            // ParticleSystem._instance.InstantiateSpawnFlashParticle(ecb, position, new float3(1, -10, 1));
 
             ecb.SetComponent(newBee, newTranslation);
+            ecb.AddComponent(newBee, newScale);
         }
     }
 }
