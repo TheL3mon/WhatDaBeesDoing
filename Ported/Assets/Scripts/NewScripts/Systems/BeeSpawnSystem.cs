@@ -21,13 +21,13 @@ public partial class BeeSpawnSystem : SystemBase
     private FieldData _fieldData;
     private ResourceData _resourceData;
     private EntityCommandBuffer _ecb;
-    private float3 minPos = new float3(-50, 100, -15);
-    private float3 maxPos = new float3(50, 100, 15);
+    private float3 minPos = new float3(-30, 0, -15);
+    private float3 maxPos = new float3(30, 0, 15);
     private float3 zero = new float3(0, 0, 0);
     public Random _random;
     bool buttonpressed = false;
     float timer;
-    const int resourceSpawnPerFrame = 10;
+    const int resourceSpawnPerFrame = 100;
 
     protected override void OnStartRunning()
     {
@@ -36,45 +36,50 @@ public partial class BeeSpawnSystem : SystemBase
         _resourcePrefab = GetSingleton<BeePrefabs>().resource;
         _resourceData = GetSingleton<ResourceData>();
         _fieldData = GetSingleton<FieldData>();
+        var beeSpawnData = GetSingleton<BeeSpawnData>();
 
-        //_fieldData.
-        //_fieldPrefab = GetSingleton<BeePrefabs>().resource;
-        //_ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         _random.InitState(4554);
         _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-        var initialBlueSpawns = new InitialSpawnJob
+        for (int i = 0; i < beeSpawnData.initialSpawnPerTeam; i++)
         {
-            ecb = _ecb,
-            team = 0,
-            bee = _blueTeamPrefab,
-            position = zero
-        }.Schedule();
+            var nextRandom = _random.NextFloat3(minPos, maxPos);
+            var blueSpawn = new SpawnJob
+            {
+                ecb = _ecb,
+                team = 0,
+                bee = _blueTeamPrefab,
+                position = nextRandom
+            }.Schedule();
+            blueSpawn.Complete();
+        }
 
-        var initialYellowSpawns = new InitialSpawnJob
+        for (int i = 0; i < beeSpawnData.initialSpawnPerTeam; i++)
         {
-            ecb = _ecb,
-            team = 1,
-            bee = _yellowTeamPrefab,
-            position = zero
-        }.Schedule();
+            var nextRandom = _random.NextFloat3(minPos, maxPos);
+            var yellowSpawn = new SpawnJob
+            {
+                ecb = _ecb,
+                team = 1,
+                bee = _yellowTeamPrefab,
+                position = nextRandom
+            }.Schedule();
+            yellowSpawn.Complete();
+        }
 
         for (int i = 0; i < resourceSpawnPerFrame; i++)
         {
+            var nextRandom = _random.NextFloat3(minPos, maxPos);
             var intialResourceSpawns = new SpawnJobResource
             {
                 ecb = _ecb,
                 resourcePrefab = _resourcePrefab,
-                position = zero,
+                position = nextRandom,
                 fieldData = _fieldData
             }.Schedule();
             intialResourceSpawns.Complete();
         }
 
-
-
-        initialBlueSpawns.Complete();
-        initialYellowSpawns.Complete();
         _ecb.Playback(EntityManager);
         _ecb.Dispose();
 
@@ -90,9 +95,7 @@ public partial class BeeSpawnSystem : SystemBase
             buttonpressed = true;
             timer = 0;
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-            //_ecb;
 
-            Debug.Log("starting job");
             var blueBeeSpawnJob = new SpawnJob
             {
                 ecb = ecb,
@@ -104,90 +107,48 @@ public partial class BeeSpawnSystem : SystemBase
             blueBeeSpawnJob.Complete();
             ecb.Playback(EntityManager);
             ecb.Dispose();
-            //Enabled = false;
         }
         if (Input.GetKeyDown(KeyCode.S))
         {
             buttonpressed = true;
             timer = 0;
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-            //_ecb;
 
             var nextRandom = _random.NextFloat3(minPos, maxPos);
 
-            Debug.Log("starting job");
             var YellowBeeSpawnJob = new SpawnJob
             {
                 ecb = ecb,
                 team = 1,
                 bee = _yellowTeamPrefab,
                 position = nextRandom
-                //beesToSpawn = 10
             }.Schedule();
 
             YellowBeeSpawnJob.Complete();
             ecb.Playback(EntityManager);
             ecb.Dispose();
-            //Enabled = false;
         }
+        if (Input.GetKeyDown(KeyCode.R))
+        {            
+            var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+            EntityCommandBuffer.ParallelWriter parallelEcb = ecb.AsParallelWriter();
 
-        // Spawn resources
-        //var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-        //EntityCommandBuffer.ParallelWriter parallelEcb = ecb2.AsParallelWriter();
-
-        //for (int i = 0; i < resourceSpawnPerFrame; i++)
-        //{
-        //    var position = _random.NextFloat3(minPos, maxPos);
-        //    var resourceSpawn = new SpawnJobResource
-        //    {
-        //        ecb = ecb2,
-        //        resourcePrefab = _resourcePrefab,
-        //        fieldData = _fieldData,
-        //        position = position
-        //    }.Schedule();
-        //    resourceSpawn.Complete();
-
-        //}
-
-        //ecb2.Playback(EntityManager);
-        //ecb2.Dispose();
-    }
-}
-
-
-[BurstCompile]
-public partial struct InitialSpawnJob : IJobEntity
-{
-    public EntityCommandBuffer ecb;
-    public int team;
-    public Entity bee;
-    public float3 position;
-    //public int beesToSpawn;
-
-    void Execute(in BeeSpawnData spawnData)
-    {
-        for (int i = 0; i < spawnData.initialSpawnPerTeam; i++)
-        {
-            var newBee = ecb.Instantiate(bee);
-            
-            if (team == 0)
+            for (int i = 0; i < resourceSpawnPerFrame; i++)
             {
-                //position.x += 2;
-                var newTranslation = new Translation { 
-                    Value = position };
-
-                ecb.SetComponent(newBee, newTranslation);
-            } 
-            if (team == 1)
-            {
-                //position.x -= 2;
-                var newTranslation = new Translation
+                var position = _random.NextFloat3(minPos, maxPos);
+                var resourceSpawn = new SpawnJobResource
                 {
-                    Value = position
-                };
+                    ecb = ecb,
+                    resourcePrefab = _resourcePrefab,
+                    fieldData = _fieldData,
+                    position = position
+                }.Schedule();
+                resourceSpawn.Complete();
 
-                ecb.SetComponent(newBee, newTranslation);
             }
+
+            ecb.Playback(EntityManager);
+            ecb.Dispose();
         }
     }
 }
@@ -205,6 +166,7 @@ public partial struct SpawnJob : IJobEntity
     {
         for (int i = 0; i < spawnData.spawnPerAction; i++)
         {
+            //Debug.Log("Bee spawn should happen!");
             var newBee = ecb.Instantiate(bee);
 
             //position.x += 2 + i;
@@ -214,7 +176,6 @@ public partial struct SpawnJob : IJobEntity
             };
 
             ecb.SetComponent(newBee, newTranslation);
-
         }
     }
 }
@@ -240,19 +201,14 @@ public partial struct SpawnJobResource : IJobEntity
 
         //Pass data from spawnData to resourceData or generate data for resource
 
-        var resource = GetResource(resourceData);
+        var resource = new Resource();
+        resource.position = position;
+        resource.height = -1;
+        resource.holderTeam = -1;
 
         var fallingResourceTag = new FallingResourceTag();
 
         ecb.AddComponent(resourceEntity, resource);
         ecb.AddComponent(resourceEntity, fallingResourceTag);
-    }
-
-    Resource GetResource(ResourceData resourceData)
-    {
-        var resource = new Resource();
-        resource.position = position;
-        resource.height = -1;
-        return resource;
     }
 }
