@@ -90,7 +90,9 @@ public partial class BeeMovementSystem : SystemBase
 
         Entities
             .WithStoreEntityQueryInField(ref _blueTeamQuery)
-            .WithAll<BlueTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, in BeeData beeData)
+            .WithAll<BlueTeamTag>()
+            .WithNone<DeadTag>()
+            .ForEach((Entity e, ref PhysicsVelocity velocity, in BeeData beeData)
         =>
             {
                 velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
@@ -127,7 +129,9 @@ public partial class BeeMovementSystem : SystemBase
 
         Entities
         .WithStoreEntityQueryInField(ref _yellowTeamQuery)
-            .WithAll<YellowTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, ref BeeData beeData)
+            .WithAll<YellowTeamTag>()
+            .WithNone<DeadTag>()
+            .ForEach((Entity e, ref PhysicsVelocity velocity, ref BeeData beeData)
         =>
             {
                 velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);

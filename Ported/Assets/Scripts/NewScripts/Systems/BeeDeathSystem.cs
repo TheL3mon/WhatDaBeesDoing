@@ -8,11 +8,13 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Entities.UniversalDelegates;
+using Unity.Physics;
 
 public partial class BeeDeathSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _endSimulationEntityCommandBufferSystem;
     public float deltaTime;
+    private FieldData _fieldData;
 
     protected override void OnCreate()
     {        
@@ -20,6 +22,12 @@ public partial class BeeDeathSystem : SystemBase
         //var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
         _endSimulationEntityCommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
+
+    protected override void OnStartRunning()
+    {
+        _fieldData = GetSingleton<FieldData>();
+    }
+
 
     protected override void OnUpdate()
     {
@@ -48,7 +56,8 @@ public partial class BeeDeathSystem : SystemBase
                 deadBees = deadArr,
                 resources = resourceArr,
                 resourceStatus = resourceStatus,
-                positions = positions
+                positions = positions,
+                fd = _fieldData
             }.Schedule();
 
             deadBeeJob.Complete();
@@ -82,9 +91,12 @@ public partial struct deadBeeJob : IJobEntity
     public NativeArray<Entity> resources;
     public ComponentDataFromEntity<Resource> resourceStatus;
     public ComponentDataFromEntity<Translation> positions;
+    public FieldData fd;
 
-    void Execute(Entity e, ref Bee bee)
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in DeadTag tag)
     {
+        var oldvelo = velocity.Linear;
+        velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
 
         if (deadBees.Contains(e))
         {
