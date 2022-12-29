@@ -43,7 +43,6 @@ public partial class BeeMovementSystem : SystemBase
 
         var beeStatus = GetComponentDataFromEntity<Bee>(true);
         var positions = GetComponentDataFromEntity<Translation>(false);
-        var resourceStatus = GetComponentDataFromEntity<Resource>(false);
 
 
 
@@ -54,7 +53,6 @@ public partial class BeeMovementSystem : SystemBase
             blueTeam = blueArr,
             yellowTeam = yellowArr,
             resources = resourceArr,
-            resourceStatus = resourceStatus,
             status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
@@ -67,7 +65,11 @@ public partial class BeeMovementSystem : SystemBase
         var containJob = new containmentJob
         {
             field = _fieldData
-        }.Schedule();
+        }.ScheduleParallel(Dependency);
+
+
+        Dependency = containJob;
+        containJob.Complete();
 
         var movementJob = new MoveBeeJob
         {
@@ -77,12 +79,11 @@ public partial class BeeMovementSystem : SystemBase
             positions = positions,
             dt = Time.DeltaTime,
             random = _random
-        }.Schedule();
+        }.ScheduleParallel(Dependency);
 
         Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
 
         //Dynamic buffers is an option
-        containJob.Complete();
         movementJob.Complete();
         blueArr.Dispose();
         yellowArr.Dispose();
@@ -90,196 +91,6 @@ public partial class BeeMovementSystem : SystemBase
 
         ecb.Playback(World.EntityManager);
 
-        //Random rand = new Random();
-        //rand.InitState((uint)UnityEngine.Random.Range(0, 100000));
-
-
-        //var blueTeamEntities = _blueTeamQuery.ToEntityArray(Allocator.Temp);
-
-        //Entities
-        //    .WithStoreEntityQueryInField(ref _blueTeamQuery)
-        //    .WithAll<BlueTeamTag>()
-        //    .WithNone<DeadTag>()
-        //    .ForEach((Entity e, ref PhysicsVelocity velocity, in BeeData beeData)
-        //=>
-        //    {
-
-
-        //        var dir = rand.NextFloat3();
-        //        var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-        //        dir /= len;
-        //        dir -= 0.5f;
-        //        dir *= rand.NextFloat(0, 1);
-
-        //        velocity.Linear += dir * (beeData.flightJitter * deltaTime);
-        //        velocity.Linear *= (1f - beeData.damping);
-
-        //        var beePos = GetComponent<Translation>(e);
-
-        //        var BlueRandomAttractorBee = blueTeamEntities[UnityEngine.Random.Range(0, blueTeamEntities.Length)];
-        //        var blueAttractorBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
-
-        //        var deltaAttract = blueAttractorBeePos.Value - beePos.Value;
-        //        var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
-
-        //        if (distAttract > 0f)
-        //        {
-        //            velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
-        //        }
-
-        //        var BlueRandomRepellerBee = blueTeamEntities[UnityEngine.Random.Range(0, blueTeamEntities.Length)];
-        //        var blueRepellerBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
-
-        //        var delta = blueRepellerBeePos.Value - beePos.Value;
-        //        var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-        //        if (dist > 0f)
-        //        {
-        //            velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
-        //        }
-
-        //        var bee = GetComponent<Bee>(e);
-
-        //        // only used for smooth rotation:
-        //        float3 oldSmoothPos = bee.smoothPosition;
-        //        if (bee.isAttacking == false)
-        //        {
-        //            bee.smoothPosition = Vector3.Lerp(bee.smoothPosition, beePos.Value, deltaTime * beeData.rotationStiffness);
-        //        }
-        //        else
-        //        {
-        //            bee.smoothPosition = beePos.Value;
-        //        }
-        //        bee.smoothDirection = bee.smoothPosition - oldSmoothPos;
-
-        //        //Bee stretching
-        //        var size = bee.size;
-        //        var scale = new float3(size, size, size);
-
-        //        if (!bee.dead)
-        //        {
-        //            var velPow = (velocity.Linear * velocity.Linear);
-        //            var magnitude = Mathf.Sqrt(velPow.x + velPow.y + velPow.z);
-
-        //            var stretch = Mathf.Max(1f, magnitude * beeData.speedStretch);
-        //            scale.z *= stretch;
-        //            scale.x /= (stretch - 1f) / 5f + 1f;
-        //            scale.y /= (stretch - 1f) / 5f + 1f;
-        //        }
-        //        var rotation = quaternion.identity;
-
-        //        var q = (Vector3.zero == Vector3.left);
-
-        //        var temp = (bee.smoothDirection == float3.zero);
-
-        //        var isZeroVector = temp.x && temp.y && temp.z;
-
-        //        if (!isZeroVector)
-        //        {
-        //            rotation = quaternion.LookRotation(bee.smoothDirection, new float3(0, 1, 0));
-        //        }
-
-        //        if (bee.dead)
-        //        {
-        //            bee.beeColor *= .75f;
-        //            bee.beeScale *= Mathf.Sqrt(bee.deathTimer);
-        //        }
-        //    }).Run();
-
-
-        //var yellowTeamEntities = _yellowTeamQuery.ToEntityArray(Allocator.Temp);
-
-
-        //Entities
-        //.WithStoreEntityQueryInField(ref _yellowTeamQuery)
-        //    .WithAll<YellowTeamTag>()
-        //    .WithNone<DeadTag>()
-        //    .ForEach((Entity e, ref PhysicsVelocity velocity, ref BeeData beeData)
-        //=>
-        //    {
-        //        //var t = (float3)UnityEngine.Random.insideUnitSphere;
-
-        //        var dir = rand.NextFloat3();
-        //        var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
-        //        dir /= len;
-        //        dir -= 0.5f;
-        //        dir *= rand.NextFloat(0, 1);
-
-
-        //        velocity.Linear += dir * (beeData.flightJitter * deltaTime);
-        //        velocity.Linear *= (1f - beeData.damping);
-
-        //        var beePos = GetComponent<Translation>(e);
-
-        //        var yelloeRandomAttractor = yellowTeamEntities[UnityEngine.Random.Range(0, yellowTeamEntities.Length)];
-        //        var yellowRandomAttractorPos = GetComponent<Translation>(yelloeRandomAttractor);
-
-        //        var deltaAttract = yellowRandomAttractorPos.Value - beePos.Value;
-        //        var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
-        //        if (distAttract > 0f)
-        //        {
-        //            velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
-        //        }
-
-
-        //        var yellowRandomRepeller = yellowTeamEntities[UnityEngine.Random.Range(0, yellowTeamEntities.Length)];
-        //        var yellowRandomRepellerPos = GetComponent<Translation>(yellowRandomRepeller);
-
-        //        var delta = yellowRandomRepellerPos.Value - beePos.Value;
-        //        var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-        //        if (dist > 0f)
-        //        {
-        //            velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
-        //        }
-
-        //        var bee = GetComponent<Bee>(e);
-
-        //        // only used for smooth rotation:
-        //        float3 oldSmoothPos = bee.smoothPosition;
-        //        if (bee.isAttacking == false)
-        //        {
-        //            bee.smoothPosition = Vector3.Lerp(bee.smoothPosition, beePos.Value, deltaTime * beeData.rotationStiffness);
-        //        }
-        //        else
-        //        {
-        //            bee.smoothPosition = beePos.Value;
-        //        }
-        //        bee.smoothDirection = bee.smoothPosition - oldSmoothPos;
-
-        //        //Bee stretching
-        //        var size = bee.size;
-        //        var scale = new float3(size, size, size);
-
-        //        if (!bee.dead)
-        //        {
-        //            var velPow = (velocity.Linear * velocity.Linear);
-        //            var magnitude = Mathf.Sqrt(velPow.x + velPow.y + velPow.z);
-
-        //            var stretch = Mathf.Max(1f, magnitude * beeData.speedStretch);
-        //            scale.z *= stretch;
-        //            scale.x /= (stretch - 1f) / 5f + 1f;
-        //            scale.y /= (stretch - 1f) / 5f + 1f;
-        //        }
-        //        var rotation = quaternion.identity;
-
-        //        var q = (Vector3.zero == Vector3.left);
-
-        //        var temp = (bee.smoothDirection == float3.zero);
-
-        //        var isZeroVector = temp.x && temp.y && temp.z;
-
-        //        if (!isZeroVector)
-        //        {
-        //            rotation = quaternion.LookRotation(bee.smoothDirection, new float3(0, 1, 0));
-        //        }
-
-        //        if (bee.dead)
-        //        {
-        //            bee.beeColor *= .75f;
-        //            bee.beeScale *= Mathf.Sqrt(bee.deathTimer);
-        //        }
-
-
-        //    }).Run();
         ecb.Dispose();
     }
 }
@@ -289,7 +100,7 @@ public partial struct containmentJob : IJobEntity
 {
     public FieldData field;
 
-    void Execute(Entity e, ref Translation trans, ref PhysicsVelocity velocity, in BeeData data)
+    void Execute(Entity e, ref Translation trans, ref PhysicsVelocity velocity)
     {
         if (System.Math.Abs(trans.Value.x) > field.size.x * .48f)
         {
@@ -319,7 +130,6 @@ public partial struct targetingJob : IJobEntity
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
     public NativeArray<Entity> resources;
-    public ComponentDataFromEntity<Resource> resourceStatus;
     public ComponentDataFromEntity<Translation> positions;
     public EntityManager manager;
     public float dt;
@@ -340,16 +150,15 @@ public partial struct targetingJob : IJobEntity
         {
             if (random.NextFloat(1.0f) < beeData.aggression)
             {
-                if (blueTeam.Contains(e))
+                if (bee.team == 0)
                 {
                     if (yellowTeam.Length > 0)
                     {
                         var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
                         bee.enemyTarget = randomyellow;
                     }
-
                 }
-                else if (yellowTeam.Contains(e))
+                else if (bee.team == 1)
                 {
                     if (blueTeam.Length > 0)
                     {
@@ -426,7 +235,7 @@ public partial struct MoveBeeJob : IJobEntity
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in Rotation rotation, in BeeData beeData, in AliveTag alive)
+    void Execute(Entity e, int entityInQueryIndex, ref Bee bee, ref PhysicsVelocity velocity, in Rotation rotation, in BeeData beeData, in AliveTag alive)
     {
         //Debug.Log("Does this run?");
 
