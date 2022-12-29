@@ -9,6 +9,7 @@ using Unity.Transforms;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEngine.Rendering.DebugUI;
 using JobRandom = Unity.Mathematics.Random;
 using Random = UnityEngine.Random;
 
@@ -16,6 +17,14 @@ public partial class TestSystem : SystemBase
 {
     private static ResourceData _resourceData;
     private Unity.Mathematics.Random _random;
+    private FieldData _fieldData;
+
+    protected override void OnStartRunning()
+    {
+        _fieldData = GetSingleton<FieldData>();
+    }
+
+
     protected override void OnUpdate()
     {
         _random = new Unity.Mathematics.Random((uint)Random.Range(1, 500000));
@@ -59,7 +68,8 @@ public partial class TestSystem : SystemBase
             resourceData = _resourceData,
             dt = Time.DeltaTime,
             ecb = ecb,
-            random = _random
+            random = _random,
+            fd = _fieldData
         }.Schedule();
 
         collectingJob.Complete();
@@ -124,6 +134,8 @@ public partial struct collectResourceJob : IJobEntity
     public float dt;
 
     public EntityCommandBuffer ecb;
+
+    public FieldData fd;
 
 
     public JobRandom random;
@@ -209,13 +221,20 @@ public partial struct collectResourceJob : IJobEntity
             {
                 float3 targetPos;
 
+
+
+                //Vector3 targetPos = new Vector3(-Field.size.x * .45f + Field.size.x * .9f * bee.team, 0f, bee.position.z);
+
+
                 if (bee.team == 0)
                 {
-                    targetPos = new float3(50, 0, 0);
+                    targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * bee.team, 0f, positions[e].Value.z);
+                    //targetPos = new float3(50, fd.size.y, fd.size.z);
                 } 
                 else
                 {
-                    targetPos = new float3(-50, 0, 0);
+                    targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * bee.team, 0f, positions[e].Value.z);
+                    //targetPos = new float3(-50, random.NextFloat(0, fd.size.y), random.NextFloat(0, fd.size.z));
                 }
 
                 //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
