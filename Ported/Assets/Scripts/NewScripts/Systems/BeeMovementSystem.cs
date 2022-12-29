@@ -17,6 +17,9 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
 using System;
+using static UnityEngine.GraphicsBuffer;
+using Mono.Cecil;
+using Unity.Entities.UniversalDelegates;
 
 public partial class BeeMovementSystem : SystemBase
 {
@@ -52,6 +55,8 @@ public partial class BeeMovementSystem : SystemBase
         {
             blueTeam = blueArr,
             yellowTeam = yellowArr,
+            resources = resourceArr,
+            resourceStatus = resourceStatus,
             status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
@@ -71,34 +76,35 @@ public partial class BeeMovementSystem : SystemBase
         Entities
             .WithStoreEntityQueryInField(ref _blueTeamQuery)
             .WithAll<BlueTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, in BeeData beeData)
-        =>{
-            velocity.Linear += (float3) Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
-            velocity.Linear *= (1f - beeData.damping);
-
-            var beePos = GetComponent<Translation>(e);
-
-            var BlueRandomAttractorBee = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
-            var blueAttractorBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
-
-            var deltaAttract = blueAttractorBeePos.Value - beePos.Value;
-            var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
-            
-            if(distAttract > 0f)
+        =>
             {
-                velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
-            }
+                velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
+                velocity.Linear *= (1f - beeData.damping);
 
-            var BlueRandomRepellerBee = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
-            var blueRepellerBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
-            
-            var delta = blueRepellerBeePos.Value - beePos.Value;
-            var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-            if (dist > 0f)
-            {
-                velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
-            }
+                var beePos = GetComponent<Translation>(e);
 
-        }).Run();
+                var BlueRandomAttractorBee = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
+                var blueAttractorBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
+
+                var deltaAttract = blueAttractorBeePos.Value - beePos.Value;
+                var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
+
+                if (distAttract > 0f)
+                {
+                    velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
+                }
+
+                var BlueRandomRepellerBee = blueTeamEntities[Random.Range(0, blueTeamEntities.Length)];
+                var blueRepellerBeePos = GetComponent<Translation>(BlueRandomAttractorBee);
+
+                var delta = blueRepellerBeePos.Value - beePos.Value;
+                var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+                if (dist > 0f)
+                {
+                    velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
+                }
+
+            }).Run();
 
 
         var yellowTeamEntities = _yellowTeamQuery.ToEntityArray(Allocator.Temp);
@@ -107,44 +113,46 @@ public partial class BeeMovementSystem : SystemBase
         Entities
         .WithStoreEntityQueryInField(ref _yellowTeamQuery)
             .WithAll<YellowTeamTag>().ForEach((Entity e, ref PhysicsVelocity velocity, ref BeeData beeData)
-        => {
-            velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
-            velocity.Linear *= (1f - beeData.damping);
-
-            var beePos = GetComponent<Translation>(e);
-
-            var yelloeRandomAttractor = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
-            var yellowRandomAttractorPos = GetComponent<Translation>(yelloeRandomAttractor);
-
-            var deltaAttract = yellowRandomAttractorPos.Value - beePos.Value;
-            var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
-            if (distAttract > 0f)
+        =>
             {
-                velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
-            }
+                velocity.Linear += (float3)Random.insideUnitSphere * (beeData.flightJitter * deltaTime);
+                velocity.Linear *= (1f - beeData.damping);
+
+                var beePos = GetComponent<Translation>(e);
+
+                var yelloeRandomAttractor = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
+                var yellowRandomAttractorPos = GetComponent<Translation>(yelloeRandomAttractor);
+
+                var deltaAttract = yellowRandomAttractorPos.Value - beePos.Value;
+                var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
+                if (distAttract > 0f)
+                {
+                    velocity.Linear += deltaAttract * (beeData.teamAttraction * deltaTime / distAttract);
+                }
 
 
-            var yellowRandomRepeller = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
-            var yellowRandomRepellerPos = GetComponent<Translation>(yellowRandomRepeller);
+                var yellowRandomRepeller = yellowTeamEntities[Random.Range(0, yellowTeamEntities.Length)];
+                var yellowRandomRepellerPos = GetComponent<Translation>(yellowRandomRepeller);
 
-            var delta = yellowRandomRepellerPos.Value - beePos.Value;
-            var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-            if (dist > 0f)
-            {
-                velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
-            }
-        }).Run();
-
+                var delta = yellowRandomRepellerPos.Value - beePos.Value;
+                var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+                if (dist > 0f)
+                {
+                    velocity.Linear -= delta * (beeData.teamRepulsion * deltaTime / dist);
+                }
+            }).Run();
         ecb.Dispose();
     }
 }
 
 
 
-public partial struct targetingJob :IJobEntity
+public partial struct targetingJob : IJobEntity
 {
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
+    public NativeArray<Entity> resources;
+    public ComponentDataFromEntity<Resource> resourceStatus;
     public ComponentDataFromEntity<Translation> positions;
     public EntityManager manager;
     public float dt;
@@ -159,73 +167,76 @@ public partial struct targetingJob :IJobEntity
     {
         //if (bee.dead == false)
         //{
-            //if(blueTeam.Contains(e))
+        //if(blueTeam.Contains(e))
+        {
+            if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
             {
-                if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
+                if (random.NextFloat(1.0f) < beeData.aggression)
                 {
-                    if(random.NextFloat(1.0f) < beeData.aggression)
+                    if (blueTeam.Contains(e))
                     {
-                        if (blueTeam.Contains(e))
+                        if (yellowTeam.Length > 0)
                         {
-                            if (yellowTeam.Length > 0)
-                            {
-                                var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
-                                bee.enemyTarget = randomyellow;
-                            }
-
-                        } else if (yellowTeam.Contains(e))
-                        {
-                            if (blueTeam.Length > 0)
-                            {
-                                var randomblue = blueTeam[random.NextInt(blueTeam.Length)];
-                                bee.enemyTarget = randomblue;
-                            }
+                            var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
+                            bee.enemyTarget = randomyellow;
                         }
-                    } 
-                    else
-                    {
-                        //Try to taget a random resource
 
-                        ecb.AddComponent(e, new TryGetRandomResourceTag());
-                        //Debug.Log("Missing implementation for getting a resource");
                     }
-                } 
-                else if (bee.enemyTarget != Entity.Null)
-                {
-                    if (status[bee.enemyTarget].dead)
+                    else if (yellowTeam.Contains(e))
                     {
-                        //Debug.Log("dead bee");
-                        bee.enemyTarget = Entity.Null;
-                    } else
-                    {
-                        var delta = positions[bee.enemyTarget].Value - positions[e].Value;
-                        float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
-                        if(sqrDist > beeData.attackDistance * beeData.attackDistance)
+                        if (blueTeam.Length > 0)
                         {
-                            velocity.Linear += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
-                        } else
-                        {
-                            bee.isAttacking = true;
-                            velocity.Linear += delta * (beeData.attackForce * dt / Mathf.Sqrt(sqrDist));
-                            if (sqrDist < beeData.hitDistance * beeData.hitDistance)
-                            {
-                                                                
-                                //Spawn particles
-                                //velocity change
-
-                                ecb.AddComponent(bee.enemyTarget, new DeadTag());
-                                ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
-                                bee.enemyTarget = Entity.Null;
-                            }
+                            var randomblue = blueTeam[random.NextInt(blueTeam.Length)];
+                            bee.enemyTarget = randomblue;
                         }
                     }
                 }
-                else if (bee.resourceTarget != Entity.Null)
+                else
                 {
-                    //Debug.Log("Bee has a resource target");    
-                    ecb.AddComponent(e, new CollectingTag());
+                    //Try to taget a random resource
+
+                    ecb.AddComponent(e, new TryGetRandomResourceTag());
+                    //Debug.Log("Missing implementation for getting a resource");
                 }
             }
+            else if (bee.enemyTarget != Entity.Null)
+            {
+                if (status[bee.enemyTarget].dead)
+                {
+                    //Debug.Log("dead bee");
+                    bee.enemyTarget = Entity.Null;
+                }
+                else
+                {
+                    var delta = positions[bee.enemyTarget].Value - positions[e].Value;
+                    float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+                    if (sqrDist > beeData.attackDistance * beeData.attackDistance)
+                    {
+                        velocity.Linear += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
+                    }
+                    else
+                    {
+                        bee.isAttacking = true;
+                        velocity.Linear += delta * (beeData.attackForce * dt / Mathf.Sqrt(sqrDist));
+                        if (sqrDist < beeData.hitDistance * beeData.hitDistance)
+                        {
+
+                            //Spawn particles
+                            //velocity change
+
+                            ecb.AddComponent(bee.enemyTarget, new DeadTag());
+                            ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
+                            bee.enemyTarget = Entity.Null;
+                        }
+                    }
+                }
+            }
+            else if (bee.resourceTarget != Entity.Null)
+            {
+                //Debug.Log("Bee has a resource target");    
+                ecb.AddComponent(e, new CollectingTag());
+            }
+        }
         //}
     }
 }
