@@ -40,24 +40,23 @@ public partial class ParticleSystem : SystemBase
     {
         timer = Time.DeltaTime;
 
-        var _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         // TEST SPAWN
         if (Input.GetKeyDown(KeyCode.F))
 		{
             // last property (velocity) should be set to -> bee.velocity * .35f
-            SpawnParticles(_ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1,-10,1));
+            SpawnParticles(ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1,-10,1));
         }
 
-        var _ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         var particleBehaviorJob = new ParticleBehaviorJob
         {
-            ecb = _ecb2,
+            ecb = ecb,
             fieldData = _fieldData,
             deltaTime = timer
         }.Schedule();
         particleBehaviorJob.Complete();
-        _ecb2.Playback(EntityManager);
-        _ecb2.Dispose();
+        ecb.Playback(EntityManager);
+        ecb.Dispose();
     }
 
     public void SpawnParticles(EntityCommandBuffer _ecb, float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
