@@ -7,10 +7,12 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Entities.UniversalDelegates;
 
 public partial class BeeDeathSystem : SystemBase
 {
     private EndSimulationEntityCommandBufferSystem _endSimulationEntityCommandBufferSystem;
+    public float deltaTime;
 
     protected override void OnCreate()
     {        var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
@@ -20,6 +22,7 @@ public partial class BeeDeathSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        deltaTime = Time.DeltaTime;
         
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
@@ -52,7 +55,8 @@ public partial class BeeDeathSystem : SystemBase
 
             var deleteBeeJob = new deleteDeadBee
             {
-                ecb = ecb
+                ecb = ecb,
+                dt = deltaTime
             }.Schedule();
 
             deleteBeeJob.Complete();
@@ -127,13 +131,27 @@ public partial struct deleteDeadBee : IJobEntity
 {
 
     public EntityCommandBuffer ecb;
+    public float dt;
 
     void Execute(Entity e, ref Bee bee, in DeadTag tag)
     {
         //bee.dead = true;
         // Debug.Log("Deleted bee");
+        bee.deathTimer -= dt / 10f;
+        float3 scale = bee.beeScale;
+        scale *= Mathf.Sqrt(bee.deathTimer);
 
-        ecb.DestroyEntity(e);
+        var newScale = new NonUniformScale
+        {
+            Value = scale
+        };
+        ecb.AddComponent(e, newScale);
+        ecb.RemoveComponent<AliveTag>(e);
+
+        if (bee.deathTimer < 0)
+        {
+            ecb.DestroyEntity(e);
+        }
     }
 
 }
