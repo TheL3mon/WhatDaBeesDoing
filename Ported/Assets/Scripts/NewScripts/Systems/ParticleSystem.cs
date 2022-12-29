@@ -62,6 +62,7 @@ public partial class ParticleSystem : SystemBase
     public void SpawnParticles(EntityCommandBuffer _ecb, float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
     {
         // TEST VALUES
+
         UnityEngine.Color _bloodColor = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
         float _size = 0;
         float3 _velocity = 0;
