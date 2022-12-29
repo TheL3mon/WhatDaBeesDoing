@@ -15,8 +15,9 @@ public partial class BeeDeathSystem : SystemBase
     public float deltaTime;
 
     protected override void OnCreate()
-    {        var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
+    {        
+        //var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
+        //var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
         _endSimulationEntityCommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
     }
 
@@ -65,6 +66,7 @@ public partial class BeeDeathSystem : SystemBase
 
         ecb.Dispose();
         deadArr.Dispose();
+        resourceArr.Dispose();
 
     }
 }
