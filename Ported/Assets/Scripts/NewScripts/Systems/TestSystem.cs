@@ -65,7 +65,6 @@ public partial class TestSystem : SystemBase
         collectingJob.Complete();
         ecb.Playback(World.EntityManager);
 
-
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();

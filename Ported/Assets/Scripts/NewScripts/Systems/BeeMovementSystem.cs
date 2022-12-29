@@ -224,6 +224,8 @@ public partial struct targetingJob : IJobEntity
                             //Spawn particles
                             //velocity change
 
+                            ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
+
                             ecb.AddComponent(bee.enemyTarget, new DeadTag());
                             ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
                             bee.enemyTarget = Entity.Null;

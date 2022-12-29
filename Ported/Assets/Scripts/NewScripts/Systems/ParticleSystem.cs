@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
 using Unity.Burst;
 using Unity.Collections;
@@ -17,6 +18,7 @@ using static Unity.Entities.EntityQueryBuilder;
 using static UnityEditor.PlayerSettings;
 using static UnityEngine.ParticleSystem;
 using static UnityEngine.Rendering.DebugUI;
+using Random = Unity.Mathematics.Random;
 
 public partial class ParticleSystem : SystemBase
 {
@@ -26,12 +28,16 @@ public partial class ParticleSystem : SystemBase
     public ParticleData _particleData;
     public FieldData _fieldData;
     public Entity _particlePrefab;
+    public static ParticleSystem _instance;
+    public Random rand;
 
     protected override void OnStartRunning()
     {
+        //rand.InitState(25151);
         _particleData = GetSingleton<ParticleData>();
         _fieldData = GetSingleton<FieldData>();
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
+        _instance = this;
 
         random.InitState(6969);
     }
@@ -40,23 +46,126 @@ public partial class ParticleSystem : SystemBase
     {
         timer = Time.DeltaTime;
 
-        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
         // TEST SPAWN
         if (Input.GetKeyDown(KeyCode.F))
-		{
+        {
+            var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
             // last property (velocity) should be set to -> bee.velocity * .35f
             SpawnParticles(ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1,-10,1));
         }
 
+        var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+
         var particleBehaviorJob = new ParticleBehaviorJob
         {
-            ecb = ecb,
+            ecb = ecb2,
             fieldData = _fieldData,
             deltaTime = timer
         }.Schedule();
         particleBehaviorJob.Complete();
-        ecb.Playback(EntityManager);
-        ecb.Dispose();
+
+        ecb2.Playback(EntityManager);
+        ecb2.Dispose();
+    }
+
+    public void InstantiateSpawnFlashParticle(EntityCommandBuffer ecb, float3 position, float3 velocity, float _velocityJitter = 6f)
+    {
+        //Particle particle = new Particle
+        //{
+        //    type = ParticleType.SpawnFlash,
+        //    position = position,
+        //    velocity = velocity + rand.NextFloat3Direction() * 5f,
+        //    size = rand.NextFloat(1f, 2f),
+        //    life = 1f,
+        //    lifeDuration = rand.NextFloat(.25f,.5f),
+        //    stuck = false
+        //};
+
+        Particle particle = new Particle
+        {
+            type = ParticleType.SpawnFlash,
+            position = position,
+            velocity = velocity,
+            size = 1.5f,
+            life = 1f,
+            lifeDuration = .33f,
+            stuck = false
+        };
+
+        UnityEngine.Color color = UnityEngine.Color.yellow;
+
+        InstantiateParticle(ecb, particle, color);
+    }
+
+    public void InstantiateBloodParticle(EntityCommandBuffer ecb, float3 position, float3 velocity, float _velocityJitter = 6f)
+    {
+        //Particle particle = new Particle
+        //{
+        //    type = ParticleType.Blood,
+        //    position = position,
+        //    velocity = velocity + rand.NextFloat3Direction() * _velocityJitter,
+        //    size = rand.NextFloat(0.1f, 0.2f),
+        //    life = 1f,
+        //    lifeDuration = rand.NextFloat(3f, 5f),
+        //    stuck = false
+        //};
+
+        Particle particle = new Particle
+        {
+            type = ParticleType.Blood,
+            position = position,
+            velocity = velocity,
+            size = 0.15f,
+            life = 1f,
+            lifeDuration = 4f,
+            stuck = false
+        };
+
+        UnityEngine.Color color = UnityEngine.Color.red;
+
+        InstantiateParticle(ecb, particle, color);
+    }
+
+    public void InstantiateParticle(EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color)
+    {
+        //Debug.Log("BOFA DEEZ PARTICLE NUTS");
+        var newParticle = ecb.Instantiate(_particlePrefab);
+
+        var newTranslation = new Translation
+        {
+            Value = particle.position
+        };
+
+        var newScale = new NonUniformScale
+        {
+            Value = particle.size
+        };
+
+        if (particle.type == ParticleType.SpawnFlash)
+        {
+            color = UnityEngine.Color.white;
+
+            ParticleSpawnTag spawnTag = new ParticleSpawnTag();
+            ecb.AddComponent(newParticle, spawnTag);
+        }
+        else if (particle.type == ParticleType.Blood)
+        {
+            ParticleBloodTag bloodTag = new ParticleBloodTag();
+            ecb.AddComponent(newParticle, bloodTag);
+        }
+        ParticleTag particleTag = new ParticleTag();
+        ecb.AddComponent(newParticle, particleTag);
+
+        particle.color = color;
+        var newColor = new ParticleColorComponent
+        {
+            Value = color
+        };
+
+        ecb.SetComponent(newParticle, particle);
+        ecb.SetComponent(newParticle, newTranslation);
+        ecb.AddComponent(newParticle, newScale);
+        ecb.SetComponent(newParticle, newColor);
     }
 
     public void SpawnParticles(EntityCommandBuffer _ecb, float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
@@ -69,7 +178,7 @@ public partial class ParticleSystem : SystemBase
         float _lifeDuration = 0;
         if (_type == ParticleType.Blood)
         {
-            Debug.Log("BLOOD");
+            //Debug.Log("BLOOD");
             _size = UnityEngine.Random.Range(0.1f, 0.2f);
             _velocity = _vel + (float3)UnityEngine.Random.insideUnitSphere * _velocityJitter;
             _lifeDuration = UnityEngine.Random.Range(3f, 5f);

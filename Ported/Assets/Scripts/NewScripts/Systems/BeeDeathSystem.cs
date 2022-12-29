@@ -53,11 +53,11 @@ public partial class BeeDeathSystem : SystemBase
 
             deadBeeJob.Complete();
 
-
             var deleteBeeJob = new deleteDeadBee
             {
                 ecb = ecb,
-                dt = deltaTime
+                dt = deltaTime,
+                positions = positions
             }.Schedule();
 
             deleteBeeJob.Complete();
@@ -86,34 +86,34 @@ public partial struct deadBeeJob : IJobEntity
     void Execute(Entity e, ref Bee bee)
     {
 
-        var targetResourceIndex = resources.IndexOf(bee.resourceTarget);
-
-        if (targetResourceIndex != -1)
-        {
-            var resource = resources[targetResourceIndex];
-            var status = resourceStatus[resource];
-
-            var holder = status.holder;
-
-            if (holder == e)
-            {
-                Debug.Log("Resource holder dead.");
-                var r = new Resource();
-                r.position = positions[e].Value;
-                r.height = -1;
-                r.holderTeam = -1;
-
-                var fallingResourceTag = new FallingResourceTag();
-
-                ecb.SetComponent(resource, r);
-                ecb.AddComponent(resource, fallingResourceTag);
-            }
-
-        }
-
         if (deadBees.Contains(e))
         {
             bee.dead = true;
+
+            var targetResourceIndex = resources.IndexOf(bee.resourceTarget);
+            //Debug.Log("Bee dead.");
+
+            if (targetResourceIndex != -1)
+            {
+                var resource = resources[targetResourceIndex];
+                var status = resourceStatus[resource];
+
+                var holder = status.holder;
+
+                if (holder == e)
+                {
+                    Debug.Log("Resource holder dead.");
+                    var r = new Resource();
+                    r.position = positions[e].Value;
+                    r.height = -1;
+                    r.holderTeam = -1;
+
+                    var fallingResourceTag = new FallingResourceTag();
+
+                    ecb.SetComponent(resource, r);
+                    ecb.AddComponent(resource, fallingResourceTag);
+                }
+            }
         }
 
         if (deadBees.Contains(bee.enemyTarget))
@@ -133,6 +133,7 @@ public partial struct deleteDeadBee : IJobEntity
 {
 
     public EntityCommandBuffer ecb;
+    public ComponentDataFromEntity<Translation> positions;
     public float dt;
 
     void Execute(Entity e, ref Bee bee, in DeadTag tag)
@@ -148,7 +149,7 @@ public partial struct deleteDeadBee : IJobEntity
             Value = scale
         };
         ecb.AddComponent(e, newScale);
-        ecb.RemoveComponent<AliveTag>(e);
+
 
         if (bee.deathTimer < 0)
         {
