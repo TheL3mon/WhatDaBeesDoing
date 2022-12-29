@@ -140,17 +140,6 @@ public partial class BeeMovementSystem : SystemBase
 }
 
 
-public partial struct beeMoveJob : IJobEntity
-{
-    public float deltaTime;
-    public float3 unitSphere;
-    public float3 targetPos;
-    void Execute(ref PhysicsVelocity velocity, in BeeData beeData)
-    {
-        
-        
-    }
-}
 
 public partial struct targetingJob :IJobEntity
 {
@@ -238,14 +227,5 @@ public partial struct targetingJob :IJobEntity
                 }
             }
         //}
-    }
-}
-
-public partial struct ChaseResourceJob : IJobEntity
-{
-    public NativeArray<Entity> resources;
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData)
-    {
-
     }
 }
