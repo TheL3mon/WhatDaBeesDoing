@@ -130,18 +130,18 @@ MonoBehaviour:
   teamAttraction: 5
   teamRepulsion: 4
   damping: 0.1
-  minBeeSize: 0
-  maxBeeSize: 0
-  speedStretch: 0
-  rotationStiffness: 0
+  minBeeSize: 0.25
+  maxBeeSize: 0.5
+  speedStretch: 0.2
+  rotationStiffness: 5
   aggression: 0.5
   chaseForce: 50
   carryForce: 25
-  grabDistance: 2
+  grabDistance: 0.5
   attackDistance: 4
   attackForce: 500
-  hitDistance: 1.96
-  maxSpawnSpeed: 0
+  hitDistance: 0.5
+  maxSpawnSpeed: 75
   startBeeCount: 0
 --- !u!114 &7992802162242733060
 MonoBehaviour:
