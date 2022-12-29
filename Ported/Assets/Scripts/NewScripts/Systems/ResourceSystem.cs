@@ -146,7 +146,7 @@ public partial class ResourceSystem : SystemBase
                 //Debug.Log("Final pos: (" + resource.position + ") Grid coords: (" + resource.gridX + ", " + resource.gridY + ")");
                 //Debug.Log("Grid coords: " + resource.position);
 
-                ecb.RemoveComponent(resourceEntity, typeof(FallingResourceTag));
+                ecb.RemoveComponent<FallingResourceTag>(resourceEntity);
             }
 
             ecb.SetComponent(resourceEntity, new Translation
