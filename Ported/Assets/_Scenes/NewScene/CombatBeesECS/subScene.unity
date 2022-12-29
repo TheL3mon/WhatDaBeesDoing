@@ -275,9 +275,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speedStretch: 0.25
-  activeBatch: 0
-  activeBatchSize: 0
-  instancesPerBatch: 1023
   maxParticleCount: 0
   particlePrefab: {fileID: 5809113469991297431, guid: 14a3fd8e1ba80b244878d8f5a0c8c943,
     type: 3}

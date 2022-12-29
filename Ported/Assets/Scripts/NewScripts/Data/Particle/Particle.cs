@@ -15,6 +15,5 @@ public struct Particle : IComponentData
     public float life;
     public float lifeDuration;
     public bool stuck;
-    public Matrix4x4 cachedMatrix;
     public Color color;
 }

@@ -89,8 +89,7 @@ public partial class ParticleSystem : SystemBase
             size = _size,
             life = 1f,
             lifeDuration = _lifeDuration,
-            stuck = false,
-            cachedMatrix = Matrix4x4.identity // TEMPORARY
+            stuck = false
         };
         //
 
