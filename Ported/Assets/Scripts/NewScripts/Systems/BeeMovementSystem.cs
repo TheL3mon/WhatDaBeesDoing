@@ -12,7 +12,7 @@ using System;
 using static UnityEngine.ParticleSystem;
 
 
-[UpdateBefore(typeof(BeeDeathSystem))]
+[UpdateBefore(typeof(deadBeeJob))]
 public partial class BeeMovementSystem : SystemBase
 {
     public static bool testing_InvincibleBees = true;
@@ -88,7 +88,7 @@ public partial class BeeMovementSystem : SystemBase
             random = _random
         }.Schedule();
 
-        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
+        //Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
 
         ////Dynamic buffers is an option
         movementJob.Complete();
@@ -150,13 +150,7 @@ public partial struct targetingJob : IJobEntity
 
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
     {
-        if (bee.enemyTarget != Entity.Null && status[bee.enemyTarget].dead)
-        {
-            bee.enemyTarget = Entity.Null;
-        }
-
         if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
-        //if (false)
         {
             if (random.NextFloat(1.0f) < beeData.aggression)
             {
@@ -182,7 +176,6 @@ public partial struct targetingJob : IJobEntity
                 //Try to taget a random resource
 
                 ecb.AddComponent(e, new TryGetRandomResourceTag());
-                //Debug.Log("Missing implementation for getting a resource");
             }
         }
         else if (bee.enemyTarget != Entity.Null)
@@ -204,6 +197,7 @@ public partial struct targetingJob : IJobEntity
                     //velocity change
 
                     //ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
+
                     ecb.AddComponent(bee.enemyTarget, new DeadTag());
                     ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
                     bee.enemyTarget = Entity.Null;

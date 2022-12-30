@@ -104,12 +104,8 @@ public partial struct deadBeeJob : IJobEntity
 
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity)
     {
-        if (deadBees.Contains(e))
+        if (!bee.dead && deadBees.Contains(e))
         {
-            var oldvelo = velocity.Linear;
-            bee.dead = true;
-            velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
-
             bee.dead = true;
 
             var targetResourceIndex = resources.IndexOf(bee.resourceTarget);
@@ -139,10 +135,20 @@ public partial struct deadBeeJob : IJobEntity
             }
         }
 
-        if (deadBees.Contains(bee.enemyTarget))
+        if (bee.dead)
+        {
+            velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
+        }
+
+        if (bee.enemyTarget != Entity.Null && beeStatuses[bee.enemyTarget].dead)
         {
             bee.enemyTarget = Entity.Null;
         }
+
+        //if (deadBees.Contains(bee.enemyTarget))
+        //{
+        //    bee.enemyTarget = Entity.Null;
+        //}
 
     }
 
