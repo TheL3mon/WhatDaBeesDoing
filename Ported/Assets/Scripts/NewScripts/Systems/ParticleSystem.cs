@@ -28,7 +28,7 @@ public partial class ParticleSystem : SystemBase
     public ParticleData _particleData;
     public FieldData _fieldData;
     public Entity _particlePrefab;
-    public static ParticleSystem _instance;
+    public readonly static ParticleSystem _instance;
     public Random rand;
 
     protected override void OnStartRunning()
@@ -37,7 +37,7 @@ public partial class ParticleSystem : SystemBase
         _particleData = GetSingleton<ParticleData>();
         _fieldData = GetSingleton<FieldData>();
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
-        _instance = this;
+        //_instance = this;
 
         random.InitState(6969);
     }

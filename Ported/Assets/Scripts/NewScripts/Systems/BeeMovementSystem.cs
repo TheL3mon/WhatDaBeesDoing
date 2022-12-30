@@ -10,7 +10,7 @@ using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
 using static UnityEngine.ParticleSystem;
-
+using Unity.Burst;
 
 [UpdateBefore(typeof(deadBeeJob))]
 public partial class BeeMovementSystem : SystemBase
@@ -43,11 +43,7 @@ public partial class BeeMovementSystem : SystemBase
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
         var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
 
-        var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
-        var deadArr = deadQuery.ToEntityArray(Allocator.Persistent);
-
         var beeStatus = GetComponentDataFromEntity<Bee>(true);
-        var deadBeeStatus = GetComponentDataFromEntity<DeadTag>(true);
         var positions = GetComponentDataFromEntity<Translation>(false);
 
 
@@ -58,10 +54,8 @@ public partial class BeeMovementSystem : SystemBase
         {
             blueTeam = blueArr,
             yellowTeam = yellowArr,
-            deadBees = deadArr,
             resources = resourceArr,
             status = beeStatus,
-            deadBeeStatus = deadBeeStatus,
             positions = positions,
             dt = Time.DeltaTime,
             manager = EntityManager,
@@ -88,7 +82,7 @@ public partial class BeeMovementSystem : SystemBase
             random = _random
         }.Schedule();
 
-        //Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
+        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
 
         ////Dynamic buffers is an option
         movementJob.Complete();
@@ -102,6 +96,7 @@ public partial class BeeMovementSystem : SystemBase
     }
 }
 
+[BurstCompile]
 public partial struct containmentJob : IJobEntity
 {
     public FieldData field;
@@ -131,11 +126,12 @@ public partial struct containmentJob : IJobEntity
         }
     }
 }
+
+[BurstCompile]
 public partial struct targetingJob : IJobEntity
 {
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
-    public NativeArray<Entity> deadBees;
     public NativeArray<Entity> resources;
     public ComponentDataFromEntity<Translation> positions;
     public EntityManager manager;
@@ -144,7 +140,6 @@ public partial struct targetingJob : IJobEntity
 
     //Race conditions????+ only reading from this data
     [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> status;
-    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<DeadTag> deadBeeStatus;
 
     public Unity.Mathematics.Random random;
 
@@ -196,7 +191,7 @@ public partial struct targetingJob : IJobEntity
                     //Spawn particles
                     //velocity change
 
-                    //ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
+                    ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
 
                     ecb.AddComponent(bee.enemyTarget, new DeadTag());
                     ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
@@ -212,6 +207,7 @@ public partial struct targetingJob : IJobEntity
     }
 }
 
+[BurstCompile]
 public partial struct MoveBeeJob : IJobEntity
 {
     public EntityCommandBuffer ecb;

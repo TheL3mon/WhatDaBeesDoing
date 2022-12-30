@@ -73,6 +73,7 @@ public partial class TestSystem : SystemBase
 }
 
 
+[BurstCompile]
 public partial struct tryGetRandomResourceJob : IJobEntity
 {
 
@@ -111,6 +112,7 @@ public partial struct tryGetRandomResourceJob : IJobEntity
 
 
 
+[BurstCompile]
 public partial struct collectResourceJob : IJobEntity
 {
 

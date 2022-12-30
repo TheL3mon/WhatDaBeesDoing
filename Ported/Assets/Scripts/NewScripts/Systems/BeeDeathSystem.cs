@@ -89,7 +89,6 @@ public partial class BeeDeathSystem : SystemBase
 
 
 [BurstCompile]
-
 public partial struct deadBeeJob : IJobEntity
 {
 
@@ -157,7 +156,6 @@ public partial struct deadBeeJob : IJobEntity
 
 
 [BurstCompile]
-
 public partial struct deleteDeadBee : IJobEntity
 {
 
