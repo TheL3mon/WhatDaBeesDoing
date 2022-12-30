@@ -17,7 +17,7 @@ public partial class BeeDeathSystem : SystemBase
     private FieldData _fieldData;
 
     protected override void OnCreate()
-    {        
+    {
         //var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
         //var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
         _endSimulationEntityCommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
@@ -32,7 +32,7 @@ public partial class BeeDeathSystem : SystemBase
     protected override void OnUpdate()
     {
         deltaTime = Time.DeltaTime;
-        
+
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
 
@@ -104,10 +104,10 @@ public partial struct deadBeeJob : IJobEntity
 
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity)
     {
-
         if (deadBees.Contains(e))
         {
             var oldvelo = velocity.Linear;
+            bee.dead = true;
             velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
 
             bee.dead = true;

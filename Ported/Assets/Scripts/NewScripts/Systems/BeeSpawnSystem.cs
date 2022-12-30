@@ -134,7 +134,7 @@ public partial class BeeSpawnSystem : SystemBase
             ecb.Dispose();
         }
         if (Input.GetKeyDown(KeyCode.R))
-        {            
+        {
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
             EntityCommandBuffer.ParallelWriter parallelEcb = ecb.AsParallelWriter();
 
@@ -191,7 +191,7 @@ public partial struct SpawnJob : IJobEntity
             //    seed = seed
             //});
 
-           // ParticleSystem._instance.InstantiateSpawnFlashParticle(ecb, position, new float3(1, -10, 1));
+            // ParticleSystem._instance.InstantiateSpawnFlashParticle(ecb, position, new float3(1, -10, 1));
 
             ecb.SetComponent(newBee, newTranslation);
             ecb.AddComponent(newBee, newScale);

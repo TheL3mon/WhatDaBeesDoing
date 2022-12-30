@@ -68,28 +68,28 @@ public partial class MouseRayCastSystem : SystemBase
 
         for (int i = 0; i < 3; i++)
         {
-            for (int j = -1; j <= 1; j+=2)
+            for (int j = -1; j <= 1; j += 2)
             {
                 Vector3 wallCenter = new Vector3();
                 wallCenter[i] = fieldSize[i] * .5f * j;
                 //Debug.Log(wallCenter);
                 Plane plane = new Plane(-wallCenter, wallCenter);
                 float hitDistance;
-                if(Vector3.Dot(plane.normal, ray.direction) < 0f)
+                if (Vector3.Dot(plane.normal, ray.direction) < 0f)
                 {
-                    if(plane.Raycast(ray, out hitDistance))
+                    if (plane.Raycast(ray, out hitDistance))
                     {
                         Vector3 hitPoint = ray.GetPoint(hitDistance);
                         bool insidefield = true;
-                        for(int k = 0; k < 3; k++)
+                        for (int k = 0; k < 3; k++)
                         {
-                            if (Mathf.Abs(hitPoint[k]) > fieldSize[k] * .5f+.01f)
+                            if (Mathf.Abs(hitPoint[k]) > fieldSize[k] * .5f + .01f)
                             {
                                 insidefield = false;
                                 break;
                             }
                         }
-                        if(insidefield)
+                        if (insidefield)
                         {
                             EntityManager.SetComponentData(_marker, new Translation { Value = hitPoint });
                             break;
@@ -100,7 +100,7 @@ public partial class MouseRayCastSystem : SystemBase
         }
 
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-        if(Input.GetMouseButtonUp(0))
+        if (Input.GetMouseButtonUp(0))
         {
             var markerPos = GetComponent<Translation>(_marker);
             Debug.Log("Spawn position = " + markerPos.Value);

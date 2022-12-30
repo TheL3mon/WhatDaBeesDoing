@@ -31,9 +31,9 @@ public partial class ResourceSystem : SystemBase
 
         var rd = _resourceData;
 
-        var gridCounts = new int2((int)(_fieldData.size.x/rd.resourceSize), (int)(_fieldData.size.y/rd.resourceSize));
-        var gridSize = new Vector2(_fieldData.size.x/gridCounts.x, _fieldData.size.z/gridCounts.y);
-        var minGridPos = new Vector2((gridCounts.x-1f)*-.5f*gridSize.x,(gridCounts.y-1f)*-.5f*gridSize.y);
+        var gridCounts = new int2((int)(_fieldData.size.x / rd.resourceSize), (int)(_fieldData.size.y / rd.resourceSize));
+        var gridSize = new Vector2(_fieldData.size.x / gridCounts.x, _fieldData.size.z / gridCounts.y);
+        var minGridPos = new Vector2((gridCounts.x - 1f) * -.5f * gridSize.x, (gridCounts.y - 1f) * -.5f * gridSize.y);
 
         _resourceData.gridCounts = gridCounts;
         _resourceData.gridSize = gridSize;
@@ -201,7 +201,7 @@ public partial class ResourceSystem : SystemBase
                     newBee = ecb.Instantiate(yellowBee);
                 else
                     newBee = ecb.Instantiate(blueBee);
-                   
+
                 var newTranslation = new Translation
                 {
                     Value = resource.position

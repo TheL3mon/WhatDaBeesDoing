@@ -156,7 +156,7 @@ public partial struct collectResourceJob : IJobEntity
             var stackHeight = stackHeights[resourceIndex];
             var resourceHeight = status.height;
 
-            if (stackHeight != resourceHeight) 
+            if (stackHeight != resourceHeight)
                 bee.resourceTarget = Entity.Null;
             else
             {
@@ -192,7 +192,7 @@ public partial struct collectResourceJob : IJobEntity
                 if (bee.team == 0)
                 {
                     targetPos = new float3(50, 0, 0);
-                } 
+                }
                 else
                 {
                     targetPos = new float3(-50, 0, 0);
