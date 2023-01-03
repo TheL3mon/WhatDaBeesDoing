@@ -78,10 +78,12 @@ public partial class BeeMovementSystem : SystemBase
             random = _random
         }.ScheduleParallel(Dependency);
 
+        Dependency = movementJob;
+
         var containJob = new containmentJob
         {
             field = _fieldData
-        }.Schedule(movementJob);
+        }.ScheduleParallel(movementJob);
 
 
 
