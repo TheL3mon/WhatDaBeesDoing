@@ -11,6 +11,7 @@ public struct Bee : IComponentData
     public Entity resourceTarget;
 
     public bool dead;
+    public bool dying;
     public float deathTimer;
 
     public bool isAttacking;

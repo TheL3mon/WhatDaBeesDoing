@@ -33,26 +33,23 @@ public partial class BeeDeathSystem : SystemBase
     {
         deltaTime = Time.DeltaTime;
 
-        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-
 
         var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
         var deadArr = deadQuery.ToEntityArray(Allocator.Persistent);
 
-
-        var beesQuery = GetEntityQuery(ComponentType.ReadWrite<Bee>());
-        var beesArr = beesQuery.ToEntityArray(Allocator.Persistent);
-
-        var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
-
-        var beeStatus = GetComponentDataFromEntity<Bee>(true);
-        var resourceStatus = GetComponentDataFromEntity<Resource>(false);
-
-        var positions = GetComponentDataFromEntity<Translation>(false);
-
         if (deadArr.Length > 0)
         {
+            var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+
+            var beesQuery = GetEntityQuery(ComponentType.ReadWrite<Bee>());
+            var beesArr = beesQuery.ToEntityArray(Allocator.Persistent);
+
+            var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
+            var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
+
+            var beeStatus = GetComponentDataFromEntity<Bee>(true);
+            var resourceStatus = GetComponentDataFromEntity<Resource>(false);
+            var positions = GetComponentDataFromEntity<Translation>(false);
 
             var deadBeeJob = new deadBeeJob
             {
@@ -68,6 +65,21 @@ public partial class BeeDeathSystem : SystemBase
 
             deadBeeJob.Complete();
 
+            var clearReferencesJob = new ClearReferencesJob
+            {
+                ecb = ecb,
+                deadBees = deadArr,
+                bees = beesArr,
+                resources = resourceArr,
+                resourceStatus = resourceStatus,
+                beeStatuses = beeStatus,
+                positions = positions,
+                fd = _fieldData
+
+            }.Schedule();
+
+            clearReferencesJob.Complete();
+
             var deleteBeeJob = new deleteDeadBee
             {
                 ecb = ecb,
@@ -77,13 +89,12 @@ public partial class BeeDeathSystem : SystemBase
 
             deleteBeeJob.Complete();
             ecb.Playback(EntityManager);
+
+            beesArr.Dispose();
+            resourceArr.Dispose();
+            ecb.Dispose();
         }
-
-        ecb.Dispose();
         deadArr.Dispose();
-        beesArr.Dispose();
-        resourceArr.Dispose();
-
     }
 }
 
@@ -101,14 +112,14 @@ public partial struct deadBeeJob : IJobEntity
     public ComponentDataFromEntity<Translation> positions;
     public FieldData fd;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity)
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in DeadTag tag)
     {
         if (!bee.dead && deadBees.Contains(e))
         {
             bee.dead = true;
 
             var targetResourceIndex = resources.IndexOf(bee.resourceTarget);
-            //Debug.Log("Bee dead.");
+            Debug.Log("Bee dead.");
 
             if (targetResourceIndex != -1)
             {
@@ -138,21 +149,32 @@ public partial struct deadBeeJob : IJobEntity
         {
             velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
         }
+    }
+}
+
+[BurstCompile]
+public partial struct ClearReferencesJob : IJobEntity
+{
+
+    public EntityCommandBuffer ecb;
+    public NativeArray<Entity> deadBees;
+    public NativeArray<Entity> resources;
+    public NativeArray<Entity> bees;
+    public ComponentDataFromEntity<Resource> resourceStatus;
+    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> beeStatuses;
+    public ComponentDataFromEntity<Translation> positions;
+    public FieldData fd;
+
+    void Execute(Entity e, ref Bee bee)
+    {
 
         if (bee.enemyTarget != Entity.Null && beeStatuses[bee.enemyTarget].dead)
         {
             bee.enemyTarget = Entity.Null;
         }
-
-        //if (deadBees.Contains(bee.enemyTarget))
-        //{
-        //    bee.enemyTarget = Entity.Null;
-        //}
-
     }
 
 }
-
 
 
 [BurstCompile]

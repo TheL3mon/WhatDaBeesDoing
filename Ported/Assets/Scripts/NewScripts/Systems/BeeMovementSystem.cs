@@ -11,6 +11,8 @@ using Unity.Collections.LowLevel.Unsafe;
 using System;
 using static UnityEngine.ParticleSystem;
 using Unity.Burst;
+using System.ComponentModel;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 [UpdateBefore(typeof(deadBeeJob))]
 public partial class BeeMovementSystem : SystemBase
@@ -58,34 +60,38 @@ public partial class BeeMovementSystem : SystemBase
             status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
-            manager = EntityManager,
             ecb = ecb,
             random = _random
         }.Schedule();
+
         testingJob.Complete();
 
-        var containJob = new containmentJob
-        {
-            field = _fieldData
-        }.Schedule();
-
-
-        containJob.Complete();
+        Dependency = testingJob;
 
         var movementJob = new MoveBeeJob
         {
-            ecb = ecb,
+            ecb = ecb.AsParallelWriter(),
             blueTeam = blueArr,
             yellowTeam = yellowArr,
             positions = positions,
             dt = Time.DeltaTime,
             random = _random
-        }.Schedule();
+        }.ScheduleParallel(Dependency);
+
+        var containJob = new containmentJob
+        {
+            field = _fieldData
+        }.Schedule(movementJob);
+
+
+
 
         Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
 
         ////Dynamic buffers is an option
-        movementJob.Complete();
+        //testingJob.Complete();
+        //movementJob.Complete();
+        containJob.Complete();
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
@@ -127,15 +133,17 @@ public partial struct containmentJob : IJobEntity
     }
 }
 
+
+
 [BurstCompile]
 public partial struct targetingJob : IJobEntity
 {
     public NativeArray<Entity> blueTeam;
     public NativeArray<Entity> yellowTeam;
     public NativeArray<Entity> resources;
-    public ComponentDataFromEntity<Translation> positions;
-    public EntityManager manager;
+    [ReadOnly] public ComponentDataFromEntity<Translation> positions;
     public float dt;
+    //public EntityCommandBuffer.ParallelWriter ecb;
     public EntityCommandBuffer ecb;
 
     //Race conditions????+ only reading from this data
@@ -171,6 +179,7 @@ public partial struct targetingJob : IJobEntity
                 //Try to taget a random resource
 
                 ecb.AddComponent(e, new TryGetRandomResourceTag());
+                //ecb.AddComponent<TryGetRandomResourceTag>(e.Index, e);
             }
         }
         else if (bee.enemyTarget != Entity.Null)
@@ -191,10 +200,12 @@ public partial struct targetingJob : IJobEntity
                     //Spawn particles
                     //velocity change
 
-                    ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
+                    // ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
 
                     ecb.AddComponent(bee.enemyTarget, new DeadTag());
                     ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
+                    //ecb.AddComponent<DeadTag>(e.Index, e);
+                    //ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
                     bee.enemyTarget = Entity.Null;
                 }
             }
@@ -203,6 +214,7 @@ public partial struct targetingJob : IJobEntity
         {
             //Debug.Log("Bee has a resource target");    
             ecb.AddComponent(e, new CollectingTag());
+            //ecb.AddComponent<CollectingTag>(e.Index, e);
         }
     }
 }
@@ -210,15 +222,16 @@ public partial struct targetingJob : IJobEntity
 [BurstCompile]
 public partial struct MoveBeeJob : IJobEntity
 {
-    public EntityCommandBuffer ecb;
-    public NativeArray<Entity> blueTeam;
-    public NativeArray<Entity> yellowTeam;
-    public ComponentDataFromEntity<Translation> positions;
+    public EntityCommandBuffer.ParallelWriter ecb;
+    //[ReadOnly] public EntityCommandBuffer ecb;
+    [ReadOnly] public NativeArray<Entity> blueTeam;
+    [ReadOnly] public NativeArray<Entity> yellowTeam;
+    [ReadOnly] public ComponentDataFromEntity<Translation> positions;
     public float dt;
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in Rotation rotation, in BeeData beeData, in AliveTag alive)
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, ref Rotation rotation, ref NonUniformScale nus, in BeeData beeData, in AliveTag alive)
     {
         var dir = random.NextFloat3();
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
@@ -302,28 +315,10 @@ public partial struct MoveBeeJob : IJobEntity
             rot = quaternion.LookRotation(bee.smoothDirection, new float3(0, 1, 0));
         }
 
-        //if (bee.dead)
-        //{
-        //    bee.beeColor *= .75f;
-        //    scale *= Mathf.Sqrt(bee.deathTimer);
-        //}
-
-
         bee.beeScale = scale;
 
-        ecb.SetComponent(e, new Rotation
-        {
-            Value = rot
-        });
+        rotation.Value = rot;
 
-        ecb.SetComponent(e, new NonUniformScale
-        {
-            Value = bee.beeScale
-        });
-
-        //ecb.SetComponent(e, new NonUniformScale
-        //{
-        //    Value = bee.beeScale
-        //});
+        nus.Value = bee.beeScale;
     }
 }
