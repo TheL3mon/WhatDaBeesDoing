@@ -64,19 +64,13 @@ public partial class BeeDeathSystem : SystemBase
             }.Schedule();
 
             deadBeeJob.Complete();
+            Dependency = deadBeeJob;
 
             var clearReferencesJob = new ClearReferencesJob
             {
-                ecb = ecb,
-                deadBees = deadArr,
-                bees = beesArr,
-                resources = resourceArr,
-                resourceStatus = resourceStatus,
-                beeStatuses = beeStatus,
-                positions = positions,
-                fd = _fieldData
+                beeStatuses = beeStatus
 
-            }.Schedule();
+            }.ScheduleParallel(Dependency);
 
             clearReferencesJob.Complete();
 
@@ -155,15 +149,7 @@ public partial struct deadBeeJob : IJobEntity
 [BurstCompile]
 public partial struct ClearReferencesJob : IJobEntity
 {
-
-    public EntityCommandBuffer ecb;
-    public NativeArray<Entity> deadBees;
-    public NativeArray<Entity> resources;
-    public NativeArray<Entity> bees;
-    public ComponentDataFromEntity<Resource> resourceStatus;
     [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> beeStatuses;
-    public ComponentDataFromEntity<Translation> positions;
-    public FieldData fd;
 
     void Execute(Entity e, ref Bee bee)
     {
