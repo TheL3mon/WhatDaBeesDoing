@@ -60,9 +60,9 @@ public partial class BeeMovementSystem : SystemBase
             status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
-            ecb = ecb,
+            ecb = ecb.AsParallelWriter(),
             random = _random
-        }.Schedule();
+        }.ScheduleParallel();
 
         testingJob.Complete();
 
@@ -140,13 +140,13 @@ public partial struct containmentJob : IJobEntity
 [BurstCompile]
 public partial struct targetingJob : IJobEntity
 {
-    public NativeArray<Entity> blueTeam;
-    public NativeArray<Entity> yellowTeam;
-    public NativeArray<Entity> resources;
+    [ReadOnly] public NativeArray<Entity> blueTeam;
+    [ReadOnly] public NativeArray<Entity> yellowTeam;
+    [ReadOnly] public NativeArray<Entity> resources;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
     public float dt;
-    //public EntityCommandBuffer.ParallelWriter ecb;
-    public EntityCommandBuffer ecb;
+    public EntityCommandBuffer.ParallelWriter ecb;
+    //[ReadOnly] public EntityCommandBuffer ecb;
 
     //Race conditions????+ only reading from this data
     [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> status;
@@ -180,8 +180,8 @@ public partial struct targetingJob : IJobEntity
             {
                 //Try to taget a random resource
 
-                ecb.AddComponent(e, new TryGetRandomResourceTag());
-                //ecb.AddComponent<TryGetRandomResourceTag>(e.Index, e);
+                //ecb.AddComponent(e, new TryGetRandomResourceTag());
+                ecb.AddComponent(e.Index, e, new TryGetRandomResourceTag());
             }
         }
         else if (bee.enemyTarget != Entity.Null)
@@ -204,10 +204,10 @@ public partial struct targetingJob : IJobEntity
 
                     // ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
 
-                    ecb.AddComponent(bee.enemyTarget, new DeadTag());
-                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
-                    //ecb.AddComponent<DeadTag>(e.Index, e);
-                    //ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
+                    //ecb.AddComponent(bee.enemyTarget, new DeadTag());
+                    //ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
+                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
+                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
                     bee.enemyTarget = Entity.Null;
                 }
             }
@@ -215,8 +215,8 @@ public partial struct targetingJob : IJobEntity
         else if (bee.resourceTarget != Entity.Null)
         {
             //Debug.Log("Bee has a resource target");    
-            ecb.AddComponent(e, new CollectingTag());
-            //ecb.AddComponent<CollectingTag>(e.Index, e);
+            //ecb.AddComponent(e, new CollectingTag());
+            ecb.AddComponent(e.Index, e, new CollectingTag());
         }
     }
 }
