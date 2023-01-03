@@ -271,5 +271,6 @@ public class BeeManager : MonoBehaviour {
 				Graphics.DrawMeshInstanced(beeMesh,0,beeMaterial,beeMatrices[i],matProps);
 			}
 		}
+		Debug.Log(bees.Count);
 	}
 }
