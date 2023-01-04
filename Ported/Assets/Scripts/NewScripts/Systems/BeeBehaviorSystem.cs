@@ -45,10 +45,6 @@ public partial class BeeBehaviorSystem : SystemBase
             random = _random
         }.Schedule();
 
-        collectingJob.Complete();
-
-        Dependency = collectingJob;
-
         var targetingJob = new TargetingJob
         {
             blueTeam = blueArr,
@@ -61,26 +57,10 @@ public partial class BeeBehaviorSystem : SystemBase
             dt = Time.DeltaTime,
             ecb = ecb.AsParallelWriter(),
             random = _random
-        }.ScheduleParallel();
+        }.ScheduleParallel(collectingJob);
 
         targetingJob.Complete();
 
-
-        //var TGRRJ = new TryGetRandomResourceJob
-        //{
-        //    resources = resourceArr,
-        //    resourceStatus = resourceStatus,
-        //    ecb = ecb.AsParallelWriter(),
-        //    stackHeights = stackHeights,
-        //    resourceData = _resourceData,
-        //    random = _random
-        //}.ScheduleParallel(Dependency);
-        //TGRRJ.Complete();
-
-        //Dependency = TGRRJ;
-
-
-        //ecb.Playback(World.EntityManager);
         ecb.Playback(World.EntityManager);
 
         blueArr.Dispose();
@@ -89,43 +69,6 @@ public partial class BeeBehaviorSystem : SystemBase
         ecb.Dispose();
     }
 }
-
-
-[BurstCompile]
-public partial struct TryGetRandomResourceJob : IJobEntity
-{
-    [ReadOnly] public NativeArray<Entity> resources;
-    [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
-    [ReadOnly] public NativeList<int> stackHeights;
-    [ReadOnly] public ResourceData resourceData;
-
-    //public EntityCommandBuffer.ParallelWriter ecb;
-    public EntityCommandBuffer.ParallelWriter ecb;
-
-    public Random random;
-
-    void Execute(Entity e, ref Bee bee, in TryGetRandomResourceTag tag)
-    {
-        if (resources.Length == 0) return;
-
-        var resource = resources[random.NextInt(resources.Length)];
-        var status = resourceStatus[resource];
-
-        int index = status.gridX + status.gridY * resourceData.gridCounts.x;
-
-        if (status.height == stackHeights[index])
-        {
-            bee.resourceTarget = resource;
-            ecb.AddComponent(e.Index, e, new CollectingTag());
-        }
-        else
-        {
-            bee.resourceTarget = Entity.Null;
-        }
-        ecb.RemoveComponent<TryGetRandomResourceTag>(e.Index, e);
-    }
-}
-
 
 
 [BurstCompile]

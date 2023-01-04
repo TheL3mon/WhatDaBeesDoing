@@ -46,25 +46,20 @@ public partial class BeeDeathSystem : SystemBase
                 resources = resourceArr,
                 resourceStatus = resourceStatus,
                 positions = positions,
-            }.Schedule();
-
-            deadBeeJob.Complete();
-            Dependency = deadBeeJob;
+            }.ScheduleParallel();
 
             var clearReferencesJob = new ClearReferencesJob
             {
                 beeStatuses = beeStatus
 
-            }.Schedule(Dependency);
-
-            clearReferencesJob.Complete();
+            }.ScheduleParallel(deadBeeJob);
 
             var deleteBeeJob = new DeleteDeadBee
             {
                 ecb = ecb.AsParallelWriter(),
                 dt = deltaTime,
                 positions = positions
-            }.Schedule();
+            }.ScheduleParallel(clearReferencesJob);
 
             deleteBeeJob.Complete();
             ecb.Playback(EntityManager);
