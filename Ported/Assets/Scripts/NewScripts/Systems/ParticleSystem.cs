@@ -28,7 +28,7 @@ public partial class ParticleSystem : SystemBase
     public ParticleData _particleData;
     public FieldData _fieldData;
     public Entity _particlePrefab;
-    public static ParticleSystem _instance;
+    public readonly static ParticleSystem _instance;
     public Random rand;
 
     protected override void OnStartRunning()
@@ -37,7 +37,7 @@ public partial class ParticleSystem : SystemBase
         _particleData = GetSingleton<ParticleData>();
         _fieldData = GetSingleton<FieldData>();
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
-        _instance = this;
+        //_instance = this;
 
         random.InitState(6969);
     }
@@ -51,7 +51,7 @@ public partial class ParticleSystem : SystemBase
         {
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
             // last property (velocity) should be set to -> bee.velocity * .35f
-            SpawnParticles(ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1,-10,1));
+            SpawnParticles(ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1, -10, 1));
         }
 
         var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -281,7 +281,7 @@ public partial class ParticleSystem : SystemBase
         {
             if (!particle.stuck)
             {
-                particle.velocity += new float3(0,-1,0) * (fieldData.gravity * deltaTime);
+                particle.velocity += new float3(0, -1, 0) * (fieldData.gravity * deltaTime);
                 particle.position += particle.velocity * deltaTime;
 
                 if (System.Math.Abs(particle.position.x) > fieldData.size.x * .5f)
@@ -335,15 +335,15 @@ public partial class ParticleSystem : SystemBase
             {
                 Value = particle.size
             });
-            
+
             //if (particle.stuck)
             //{
-                particle.life -= deltaTime / particle.lifeDuration;
-                particle.color.a = particle.life;
-                ecb.SetComponent(particleEntity, new ParticleColorComponent
-                {
-                    Value = particle.color
-                });
+            particle.life -= deltaTime / particle.lifeDuration;
+            particle.color.a = particle.life;
+            ecb.SetComponent(particleEntity, new ParticleColorComponent
+            {
+                Value = particle.color
+            });
             //}
 
             ecb.SetComponent(particleEntity, particle);
