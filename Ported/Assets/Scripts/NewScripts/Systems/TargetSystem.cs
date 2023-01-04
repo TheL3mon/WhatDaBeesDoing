@@ -1,18 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 using JobRandom = Unity.Mathematics.Random;
 using Random = UnityEngine.Random;
 
-public partial class TestSystem : SystemBase
+public partial class TargetSystem : SystemBase
 {
     private static ResourceData _resourceData;
     private Unity.Mathematics.Random _random;
@@ -25,19 +21,19 @@ public partial class TestSystem : SystemBase
         var stackHeights = ResourceSystem._stackHeights;
 
         var blueTeamQuery = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
-        var blueArr = blueTeamQuery.ToEntityArray(Allocator.Persistent);
+        var blueArr = blueTeamQuery.ToEntityArray(Allocator.TempJob);
 
         var yellowTeamQuery = GetEntityQuery(ComponentType.ReadOnly<YellowTeamTag>());
-        var yellowArr = yellowTeamQuery.ToEntityArray(Allocator.Persistent);
+        var yellowArr = yellowTeamQuery.ToEntityArray(Allocator.TempJob);
 
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
+        var resourceArr = resourceQuery.ToEntityArray(Allocator.TempJob);
 
-        var positions = GetComponentDataFromEntity<Translation>(false);
-        var resourceStatus = GetComponentDataFromEntity<Resource>(false);
+        var positions = GetComponentDataFromEntity<Translation>(true);
+        var resourceStatus = GetComponentDataFromEntity<Resource>(true);
 
 
-        var TGRRJ = new tryGetRandomResourceJob
+        var TGRRJ = new TryGetRandomResourceJob
         {
             resources = resourceArr,
             resourceStatus = resourceStatus,
@@ -48,7 +44,9 @@ public partial class TestSystem : SystemBase
         }.Schedule();
         TGRRJ.Complete();
 
-        var collectingJob = new collectResourceJob
+        //Dependency = TGRRJ;
+
+        var collectingJob = new CollectResourceJob
         {
             blueTeam = blueArr,
             yellowTeam = yellowArr,
@@ -63,6 +61,7 @@ public partial class TestSystem : SystemBase
         }.Schedule();
 
         collectingJob.Complete();
+        //ecb.Playback(World.EntityManager);
         ecb.Playback(World.EntityManager);
 
         blueArr.Dispose();
@@ -74,20 +73,21 @@ public partial class TestSystem : SystemBase
 
 
 [BurstCompile]
-public partial struct tryGetRandomResourceJob : IJobEntity
+public partial struct TryGetRandomResourceJob : IJobEntity
 {
 
-    public NativeArray<Entity> resources;
-    public ComponentDataFromEntity<Resource> resourceStatus;
-    public NativeList<int> stackHeights;
-    public ResourceData resourceData;
+    [ReadOnly] public NativeArray<Entity> resources;
+    [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
+    [ReadOnly] public NativeList<int> stackHeights;
+    [ReadOnly] public ResourceData resourceData;
 
 
+    //public EntityCommandBuffer.ParallelWriter ecb;
     public EntityCommandBuffer ecb;
 
     public JobRandom random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in TryGetRandomResourceTag tag, in BeeData beeData)
+    void Execute(Entity e, ref Bee bee, in TryGetRandomResourceTag tag)
     {
         if (resources.Length == 0) return;
 
@@ -101,11 +101,15 @@ public partial struct tryGetRandomResourceJob : IJobEntity
             bee.resourceTarget = resource;
             ecb.AddComponent(e, new CollectingTag());
             ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+
+            //ecb.AddComponent(e.Index, e, new CollectingTag());
+            //ecb.RemoveComponent<TryGetRandomResourceTag>(e.Index, e);
         }
         else
         {
             bee.resourceTarget = Entity.Null;
             ecb.RemoveComponent<TryGetRandomResourceTag>(e);
+            //ecb.RemoveComponent<TryGetRandomResourceTag>(e.Index, e);
         }
     }
 }
@@ -113,15 +117,15 @@ public partial struct tryGetRandomResourceJob : IJobEntity
 
 
 [BurstCompile]
-public partial struct collectResourceJob : IJobEntity
+public partial struct CollectResourceJob : IJobEntity
 {
 
-    public NativeArray<Entity> resources;
-    public ComponentDataFromEntity<Resource> resourceStatus;
-    public ComponentDataFromEntity<Translation> positions;
-    public ResourceData resourceData;
-    public NativeArray<Entity> blueTeam;
-    public NativeArray<Entity> yellowTeam;
+    [ReadOnly] public NativeArray<Entity> resources;
+    [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
+    [ReadOnly] public ComponentDataFromEntity<Translation> positions;
+    [ReadOnly] public ResourceData resourceData;
+    [ReadOnly] public NativeArray<Entity> blueTeam;
+    [ReadOnly] public NativeArray<Entity> yellowTeam;
     public NativeList<int> stackHeights;
     public float dt;
 

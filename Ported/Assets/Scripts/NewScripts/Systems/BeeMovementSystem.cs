@@ -1,4 +1,3 @@
-using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -7,19 +6,11 @@ using Unity.Transforms;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
-using Unity.Collections.LowLevel.Unsafe;
-using System;
-using static UnityEngine.ParticleSystem;
 using Unity.Burst;
-using System.ComponentModel;
-using System.Runtime.InteropServices.WindowsRuntime;
 
-[UpdateBefore(typeof(deadBeeJob))]
 public partial class BeeMovementSystem : SystemBase
 {
     public static bool testing_InvincibleBees = true;
-    private EntityQuery _blueTeamQuery;
-    private EntityQuery _yellowTeamQuery;
     private Random _random;
     private FieldData _fieldData;
 
@@ -32,41 +23,31 @@ public partial class BeeMovementSystem : SystemBase
     protected override void OnUpdate()
     {
         _random.InitState((uint)UnityEngine.Random.Range(0, 100000));
-        var deltaTime = Time.DeltaTime;
-
-        //var allBlueBees = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
-        //var nativearr = allBlueBees.ToEntityArray(Allocator.TempJob);
-        var bees = GetEntityQuery(ComponentType.ReadOnly<Bee>());
 
         var blueTeamQuery = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
-        var blueArr = blueTeamQuery.ToEntityArray(Allocator.Persistent);
+        var blueArr = blueTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
         var yellowTeamQuery = GetEntityQuery(ComponentType.ReadOnly<YellowTeamTag>());
-        var yellowArr = yellowTeamQuery.ToEntityArray(Allocator.Persistent);
+        var yellowArr = yellowTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
+        var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
-        var beeStatus = GetComponentDataFromEntity<Bee>(true);
-        var positions = GetComponentDataFromEntity<Translation>(false);
-
-
-
+        var positions = GetComponentDataFromEntity<Translation>(true);
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-        var testingJob = new targetingJob
+        var targetingJob = new TargetingJob
         {
             blueTeam = blueArr,
             yellowTeam = yellowArr,
             resources = resourceArr,
-            status = beeStatus,
             positions = positions,
             dt = Time.DeltaTime,
             ecb = ecb.AsParallelWriter(),
             random = _random
         }.ScheduleParallel();
 
-        testingJob.Complete();
+        targetingJob.Complete();
 
-        Dependency = testingJob;
+        Dependency = targetingJob;
 
         var movementJob = new MoveBeeJob
         {
@@ -78,22 +59,21 @@ public partial class BeeMovementSystem : SystemBase
             random = _random
         }.ScheduleParallel(Dependency);
 
+        movementJob.Complete();
+
         Dependency = movementJob;
 
-        var containJob = new containmentJob
-        {
-            field = _fieldData
-        }.ScheduleParallel(movementJob);
+        //var containJob = new ContainmentJob
+        //{
+        //    field = _fieldData
+        //}.ScheduleParallel(Dependency);
 
-
-
+        //containJob.Complete();
 
         Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
+        //Debug.Log("Number of alive bees: " + (aliveArr.Length));
 
         ////Dynamic buffers is an option
-        //testingJob.Complete();
-        //movementJob.Complete();
-        containJob.Complete();
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
@@ -105,9 +85,9 @@ public partial class BeeMovementSystem : SystemBase
 }
 
 [BurstCompile]
-public partial struct containmentJob : IJobEntity
+public partial struct ContainmentJob : IJobEntity
 {
-    public FieldData field;
+    [ReadOnly] public FieldData field;
 
     void Execute(Entity e, ref Translation trans, ref PhysicsVelocity velocity)
     {
@@ -138,7 +118,7 @@ public partial struct containmentJob : IJobEntity
 
 
 [BurstCompile]
-public partial struct targetingJob : IJobEntity
+public partial struct TargetingJob : IJobEntity
 {
     [ReadOnly] public NativeArray<Entity> blueTeam;
     [ReadOnly] public NativeArray<Entity> yellowTeam;
@@ -146,10 +126,6 @@ public partial struct targetingJob : IJobEntity
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
     public float dt;
     public EntityCommandBuffer.ParallelWriter ecb;
-    //[ReadOnly] public EntityCommandBuffer ecb;
-
-    //Race conditions????+ only reading from this data
-    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> status;
 
     public Unity.Mathematics.Random random;
 
@@ -225,7 +201,6 @@ public partial struct targetingJob : IJobEntity
 public partial struct MoveBeeJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
-    //[ReadOnly] public EntityCommandBuffer ecb;
     [ReadOnly] public NativeArray<Entity> blueTeam;
     [ReadOnly] public NativeArray<Entity> yellowTeam;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;

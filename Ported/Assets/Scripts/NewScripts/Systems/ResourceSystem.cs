@@ -101,7 +101,7 @@ public partial class ResourceSystem : SystemBase
         public ResourceData rd;
         public FieldData fd;
         public float dt;
-        public NativeArray<int> stackHeights;
+        public NativeList<int> stackHeights;
         //public NativeParallelHashMap<int, Resource> resourceHashMap;
 
         void Execute(Entity resourceEntity, ref Resource resource, in FallingResourceTag frt)

@@ -154,7 +154,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccea9ea98e38942e0b0938c27ed1903e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_MotionType: 0
+  m_MotionType: 1
   m_Smoothing: 0
   m_Mass: 0.001
   m_LinearDamping: 0
@@ -208,14 +208,45 @@ MonoBehaviour:
   enemyTarget: {fileID: 0}
   resourceTarget: {fileID: 0}
   dead: 0
+  dying: 0
   deathTimer: 1
   isAttacking: 0
   isHoldingResource: 0
+  seed: 0
   beeScale:
     x: 1
     y: 1
     z: 1
-  size: 1
+  size: 0.3
+  smoothPosition:
+    x: 0
+    y: 0
+    z: 0
+  smoothDirection:
+    x: 0
+    y: 0
+    z: 0
+  transform:
+    c0:
+      x: 0
+      y: 0
+      z: 0
+      w: 0
+    c1:
+      x: 0
+      y: 0
+      z: 0
+      w: 0
+    c2:
+      x: 0
+      y: 0
+      z: 0
+      w: 0
+    c3:
+      x: 0
+      y: 0
+      z: 0
+      w: 0
   beeColor:
     x: 0
     y: 0
