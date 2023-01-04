@@ -31,6 +31,24 @@ public partial class BeeBehaviorSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(true);
         var resourceStatus = GetComponentDataFromEntity<Resource>(true);
 
+        var collectingJob = new CollectResourceJob
+        {
+            blueTeam = blueArr,
+            yellowTeam = yellowArr,
+            resources = resourceArr,
+            resourceStatus = resourceStatus,
+            positions = positions,
+            stackHeights = stackHeights,
+            resourceData = _resourceData,
+            dt = Time.DeltaTime,
+            ecb = ecb,
+            random = _random
+        }.Schedule();
+
+        collectingJob.Complete();
+
+        Dependency = collectingJob;
+
         var targetingJob = new TargetingJob
         {
             blueTeam = blueArr,
@@ -47,7 +65,6 @@ public partial class BeeBehaviorSystem : SystemBase
 
         targetingJob.Complete();
 
-        Dependency = targetingJob;
 
         //var TGRRJ = new TryGetRandomResourceJob
         //{
@@ -62,21 +79,7 @@ public partial class BeeBehaviorSystem : SystemBase
 
         //Dependency = TGRRJ;
 
-        var collectingJob = new CollectResourceJob
-        {
-            blueTeam = blueArr,
-            yellowTeam = yellowArr,
-            resources = resourceArr,
-            resourceStatus = resourceStatus,
-            positions = positions,
-            stackHeights = stackHeights,
-            resourceData = _resourceData,
-            dt = Time.DeltaTime,
-            ecb = ecb,
-            random = _random
-        }.Schedule(Dependency);
 
-        collectingJob.Complete();
         //ecb.Playback(World.EntityManager);
         ecb.Playback(World.EntityManager);
 
@@ -330,8 +333,8 @@ public partial struct TargetingJob : IJobEntity
 
                     // ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
 
-                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
                     ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
+                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
                     bee.enemyTarget = Entity.Null;
                 }
             }

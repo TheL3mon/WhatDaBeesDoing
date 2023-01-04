@@ -24,6 +24,7 @@ public partial class BeeMovementSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        _random = new Random();
         _random.InitState((uint)UnityEngine.Random.Range(0, 100000));
 
         var blueTeamQuery = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
@@ -36,16 +37,6 @@ public partial class BeeMovementSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(true);
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-        var containJob = new ContainmentJob
-        {
-            field = _fieldData
-            //random = _random
-        }.ScheduleParallel();
-
-        containJob.Complete();
-
-        Dependency = containJob;
-
         var movementJob = new MoveBeeJob
         {
             ecb = ecb.AsParallelWriter(),
@@ -53,12 +44,23 @@ public partial class BeeMovementSystem : SystemBase
             yellowTeam = yellowArr,
             positions = positions,
             dt = Time.DeltaTime,
-            random = _random
-        }.ScheduleParallel(Dependency);
+            random = _random,
+            field = _fieldData
+        }.ScheduleParallel();
 
         movementJob.Complete();
 
-        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
+        Dependency = movementJob;
+
+        var containJob = new ContainmentJob
+        {
+            field = _fieldData
+            //random = _random
+        }.ScheduleParallel(Dependency);
+
+        containJob.Complete();
+
+        //Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
         //Debug.Log("Number of alive bees: " + (aliveArr.Length));
 
         //Dynamic buffers is an option
@@ -78,50 +80,38 @@ public partial struct ContainmentJob : IJobEntity
     [ReadOnly] public FieldData field;
 
     //public Unity.Mathematics.Random random;
-    void Execute(Entity e, ref Translation pos, ref PhysicsVelocity velocity)
+    void Execute(Entity e, ref Bee bee, ref Translation pos, ref PhysicsVelocity velocity)
     {
-        // bool printValue = false;
-        //if (random.NextFloat(0, 1) < -1f)
-        //{
-        //    printValue = true;
-        //}
-
-        //var percentage = 0.0f;
 
         if (System.Math.Abs(pos.Value.x) > field.size.x * .48f)
         {
-            //var oldVel = velocity.Linear;
-            pos.Value.x = (field.size.x * .48f) * Mathf.Sign(pos.Value.x);
             velocity.Linear.x *= -.5f;
             velocity.Linear.y *= .8f;
             velocity.Linear.z *= .8f;
-            //if (random.NextFloat(0, 1) < percentage)
-            //    Debug.Log(e.Index + " X: position" + pos.Value + ", old vel: " + oldVel + ", new vel:" + velocity.Linear + ", field size: " + field.size);
-            //Debug.Log("X: position" + pos.Value +", vel: " + velocity.Linear+ ", field size: " + field.size);
         }
+
         if (System.Math.Abs(pos.Value.z) > field.size.z * .48f)
         {
-            var oldVel = velocity.Linear;
-            pos.Value.z = (field.size.z * .48f) * Mathf.Sign(pos.Value.z);
             velocity.Linear.z *= -.5f;
             velocity.Linear.x *= .8f;
             velocity.Linear.y *= .8f;
-            //if (random.NextFloat(0, 1) < percentage)
-            //    Debug.Log(e.Index + " Z: position" + pos.Value + ", old vel: " + oldVel + ", new vel:" + velocity.Linear + ", field size: " + field.size);
-            //Debug.Log("Z: position" + pos.Value + ", vel: " + velocity.Linear);
         }
+
+
         if (System.Math.Abs(pos.Value.y) > field.size.y * .48f)
         {
-            //var oldVel = velocity.Linear;
-            pos.Value.y = (field.size.y * .48f) * Mathf.Sign(pos.Value.y);
-            velocity.Linear.y *= -.5f;
-            velocity.Linear.z *= .8f;
-            velocity.Linear.x *= .8f;
-            //if (random.NextFloat(0, 1) < percentage)
-            //    Debug.Log(e.Index + " Y: position" + pos.Value + ", old vel: " + oldVel + ", new vel:" + velocity.Linear + ", field size: " + field.size);
-            //Debug.Log("Y: position" + pos.Value + ", vel: " + velocity.Linear + ", field size: " + field.size);
-            //Debug.Log("Y: position" + pos.Value + ", vel: " + velocity.Linear);
+            if (bee.dead && (pos.Value.y > 0.0f))
+            {
+                velocity.Linear = float3.zero;
+            }
+            else
+            {
+                velocity.Linear.y *= -.5f;
+                velocity.Linear.z *= .8f;
+                velocity.Linear.x *= .8f;
+            }
         }
+
     }
 }
 
@@ -132,12 +122,20 @@ public partial struct MoveBeeJob : IJobEntity
     [ReadOnly] public NativeArray<Entity> blueTeam;
     [ReadOnly] public NativeArray<Entity> yellowTeam;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
+    [ReadOnly] public FieldData field;
     public float dt;
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, ref Rotation rotation, ref NonUniformScale nus, in BeeData beeData, in AliveTag alive)
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, ref Rotation rotation, ref NonUniformScale nus, in BeeData beeData)
     {
+        if (bee.dead)
+        {
+            velocity.Linear = field.gravity * new float3(0, -9.8f, 0);
+            return;
+        }
+
+
         var dir = random.NextFloat3();
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         dir /= len;
@@ -147,7 +145,8 @@ public partial struct MoveBeeJob : IJobEntity
         var old_velocity = velocity.Linear;
         velocity.Linear += dir * (beeData.flightJitter * dt);
         velocity.Linear *= (1f - beeData.damping);
-        //if (random.NextFloat(0, 1) < 0.05f)
+
+        //if(float.IsNaN(velocity.Linear.x))
         //    Debug.Log(e.Index + " before: " + old_velocity + " after:" + velocity.Linear);
 
         var beePos = positions[e];

@@ -32,27 +32,21 @@ public partial class BeeDeathSystem : SystemBase
         {
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-            var beesQuery = GetEntityQuery(ComponentType.ReadWrite<Bee>());
-            var beesArr = beesQuery.ToEntityArray(Allocator.Persistent);
-
             var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-            var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
+            var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
             var beeStatus = GetComponentDataFromEntity<Bee>(true);
-            var resourceStatus = GetComponentDataFromEntity<Resource>(false);
-            var positions = GetComponentDataFromEntity<Translation>(false);
+            var resourceStatus = GetComponentDataFromEntity<Resource>(true);
+            var positions = GetComponentDataFromEntity<Translation>(true);
 
             var deadBeeJob = new DeadBeeJob
             {
                 ecb = ecb.AsParallelWriter(),
                 deadBees = deadArr,
-                bees = beesArr,
                 resources = resourceArr,
                 resourceStatus = resourceStatus,
-                beeStatuses = beeStatus,
                 positions = positions,
-                fd = _fieldData
-            }.ScheduleParallel();
+            }.Schedule();
 
             deadBeeJob.Complete();
             Dependency = deadBeeJob;
@@ -61,7 +55,7 @@ public partial class BeeDeathSystem : SystemBase
             {
                 beeStatuses = beeStatus
 
-            }.ScheduleParallel(Dependency);
+            }.Schedule(Dependency);
 
             clearReferencesJob.Complete();
 
@@ -70,12 +64,11 @@ public partial class BeeDeathSystem : SystemBase
                 ecb = ecb.AsParallelWriter(),
                 dt = deltaTime,
                 positions = positions
-            }.ScheduleParallel();
+            }.Schedule();
 
             deleteBeeJob.Complete();
             ecb.Playback(EntityManager);
 
-            beesArr.Dispose();
             resourceArr.Dispose();
             ecb.Dispose();
         }
@@ -90,13 +83,10 @@ public partial struct DeadBeeJob : IJobEntity
     public EntityCommandBuffer.ParallelWriter ecb;
     [ReadOnly] public NativeArray<Entity> deadBees;
     [ReadOnly] public NativeArray<Entity> resources;
-    [ReadOnly] public NativeArray<Entity> bees;
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
-    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> beeStatuses;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
-    [ReadOnly] public FieldData fd;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in DeadTag tag)
+    void Execute(Entity e, ref Bee bee, in DeadTag tag)
     {
         if (!bee.dead && deadBees.Contains(e))
         {
@@ -127,11 +117,6 @@ public partial struct DeadBeeJob : IJobEntity
                     ecb.AddComponent(resource.Index, resource, fallingResourceTag);
                 }
             }
-        }
-
-        if (bee.dead)
-        {
-            velocity.Linear = fd.gravity * new float3(0, -9.8f, 0);
         }
     }
 }
