@@ -68,7 +68,7 @@ public partial class ParticleSystem : SystemBase
         ecb2.Dispose();
     }
 
-    public void InstantiateSpawnFlashParticle(EntityCommandBuffer ecb, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateSpawnFlashParticle(EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -94,10 +94,10 @@ public partial class ParticleSystem : SystemBase
 
         UnityEngine.Color color = UnityEngine.Color.yellow;
 
-        InstantiateParticle(ecb, particle, color);
+        InstantiateParticle(ecb, particle, color, particlePrefab);
     }
 
-    public void InstantiateBloodParticle(EntityCommandBuffer ecb, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateBloodParticle(EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -123,13 +123,14 @@ public partial class ParticleSystem : SystemBase
 
         UnityEngine.Color color = UnityEngine.Color.red;
 
-        InstantiateParticle(ecb, particle, color);
+        InstantiateParticle(ecb, particle, color, particlePrefab);
     }
 
-    public void InstantiateParticle(EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color)
+    public static void InstantiateParticle(EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
     {
         //Debug.Log("BOFA DEEZ PARTICLE NUTS");
-        var newParticle = ecb.Instantiate(_particlePrefab);
+        var newParticle = ecb.Instantiate(particlePrefab);
+        //var newParticle = ecb.Instantiate(particlePrefab);
 
         var newTranslation = new Translation
         {
