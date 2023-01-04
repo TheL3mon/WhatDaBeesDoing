@@ -5,16 +5,15 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
-using JobRandom = Unity.Mathematics.Random;
-using Random = UnityEngine.Random;
+using Random = Unity.Mathematics.Random;
 
-public partial class TargetSystem : SystemBase
+public partial class BeeBehaviorSystem : SystemBase
 {
     private static ResourceData _resourceData;
-    private Unity.Mathematics.Random _random;
+    private Random _random;
     protected override void OnUpdate()
     {
-        _random = new Unity.Mathematics.Random((uint)Random.Range(1, 500000));
+        _random = new Random((uint)UnityEngine.Random.Range(1, 500000));
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
         _resourceData = ResourceSystem._resourceData;
@@ -32,17 +31,34 @@ public partial class TargetSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(true);
         var resourceStatus = GetComponentDataFromEntity<Resource>(true);
 
-
-        var TGRRJ = new TryGetRandomResourceJob
+        var targetingJob = new TargetingJob
         {
+            blueTeam = blueArr,
+            yellowTeam = yellowArr,
             resources = resourceArr,
-            resourceStatus = resourceStatus,
-            ecb = ecb,
-            stackHeights = stackHeights,
+            positions = positions,
             resourceData = _resourceData,
+            resourceStatus = resourceStatus,
+            stackHeights = stackHeights,
+            dt = Time.DeltaTime,
+            ecb = ecb.AsParallelWriter(),
             random = _random
-        }.Schedule();
-        TGRRJ.Complete();
+        }.ScheduleParallel();
+
+        targetingJob.Complete();
+
+        Dependency = targetingJob;
+
+        //var TGRRJ = new TryGetRandomResourceJob
+        //{
+        //    resources = resourceArr,
+        //    resourceStatus = resourceStatus,
+        //    ecb = ecb.AsParallelWriter(),
+        //    stackHeights = stackHeights,
+        //    resourceData = _resourceData,
+        //    random = _random
+        //}.ScheduleParallel(Dependency);
+        //TGRRJ.Complete();
 
         //Dependency = TGRRJ;
 
@@ -58,7 +74,7 @@ public partial class TargetSystem : SystemBase
             dt = Time.DeltaTime,
             ecb = ecb,
             random = _random
-        }.Schedule();
+        }.Schedule(Dependency);
 
         collectingJob.Complete();
         //ecb.Playback(World.EntityManager);
@@ -75,17 +91,15 @@ public partial class TargetSystem : SystemBase
 [BurstCompile]
 public partial struct TryGetRandomResourceJob : IJobEntity
 {
-
     [ReadOnly] public NativeArray<Entity> resources;
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
     [ReadOnly] public NativeList<int> stackHeights;
     [ReadOnly] public ResourceData resourceData;
 
-
     //public EntityCommandBuffer.ParallelWriter ecb;
-    public EntityCommandBuffer ecb;
+    public EntityCommandBuffer.ParallelWriter ecb;
 
-    public JobRandom random;
+    public Random random;
 
     void Execute(Entity e, ref Bee bee, in TryGetRandomResourceTag tag)
     {
@@ -99,18 +113,13 @@ public partial struct TryGetRandomResourceJob : IJobEntity
         if (status.height == stackHeights[index])
         {
             bee.resourceTarget = resource;
-            ecb.AddComponent(e, new CollectingTag());
-            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
-
-            //ecb.AddComponent(e.Index, e, new CollectingTag());
-            //ecb.RemoveComponent<TryGetRandomResourceTag>(e.Index, e);
+            ecb.AddComponent(e.Index, e, new CollectingTag());
         }
         else
         {
             bee.resourceTarget = Entity.Null;
-            ecb.RemoveComponent<TryGetRandomResourceTag>(e);
-            //ecb.RemoveComponent<TryGetRandomResourceTag>(e.Index, e);
         }
+        ecb.RemoveComponent<TryGetRandomResourceTag>(e.Index, e);
     }
 }
 
@@ -132,12 +141,15 @@ public partial struct CollectResourceJob : IJobEntity
     public EntityCommandBuffer ecb;
 
 
-    public JobRandom random;
+    public Random random;
 
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in CollectingTag tag, in BeeData beeData)
     {
+        if (resources.Length == 0) 
+            return; 
         var target = bee.resourceTarget;
         var index = resources.IndexOf(target);
+
         if (index == -1)
             return;
         var resource = resources[index];
@@ -147,8 +159,6 @@ public partial struct CollectResourceJob : IJobEntity
         int beeTeam = bee.team;
         int resourceHolderTeam = status.holderTeam;
 
-        if (resources.Length == 0)
-        { return; }
 
         if (status.holder == Entity.Null)
         {
@@ -241,4 +251,102 @@ public partial struct CollectResourceJob : IJobEntity
             else if (beeTeam == resourceHolderTeam) bee.resourceTarget = Entity.Null;
         }
     }
+}
+
+[BurstCompile]
+public partial struct TargetingJob : IJobEntity
+{
+    [ReadOnly] public NativeArray<Entity> blueTeam;
+    [ReadOnly] public NativeArray<Entity> yellowTeam;
+    [ReadOnly] public NativeArray<Entity> resources;
+    [ReadOnly] public ComponentDataFromEntity<Translation> positions;
+    [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
+    [ReadOnly] public ResourceData resourceData;
+    [ReadOnly] public NativeList<int> stackHeights;
+    public float dt;
+    public EntityCommandBuffer.ParallelWriter ecb;
+
+    public Unity.Mathematics.Random random;
+
+    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
+    {
+        if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
+        {
+            if (random.NextFloat(1.0f) < beeData.aggression)
+            {
+                if (bee.team == 0)
+                {
+                    if (yellowTeam.Length > 0)
+                    {
+                        var randomyellow = yellowTeam[random.NextInt(yellowTeam.Length)];
+                        bee.enemyTarget = randomyellow;
+                    }
+                }
+                else if (bee.team == 1)
+                {
+                    if (blueTeam.Length > 0)
+                    {
+                        var randomblue = blueTeam[random.NextInt(blueTeam.Length)];
+                        bee.enemyTarget = randomblue;
+                    }
+                }
+            }
+            else
+            {
+                //Try to taget a random resource
+
+                var resource = resources[random.NextInt(resources.Length)];
+                var status = resourceStatus[resource];
+
+                int index = status.gridX + status.gridY * resourceData.gridCounts.x;
+
+                if (status.height == stackHeights[index])
+                {
+                    bee.resourceTarget = resource;
+                    ecb.AddComponent(e.Index, e, new CollectingTag());
+                }
+                else
+                {
+                    bee.resourceTarget = Entity.Null;
+                }
+            }
+        }
+        else if (bee.enemyTarget != Entity.Null)
+        {
+            var delta = positions[bee.enemyTarget].Value - positions[e].Value;
+            float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+            if (sqrDist > beeData.attackDistance * beeData.attackDistance)
+            {
+                velocity.Linear += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
+            }
+            else
+            {
+                bee.isAttacking = true;
+                velocity.Linear += delta * (beeData.attackForce * dt / Mathf.Sqrt(sqrDist));
+                if (sqrDist < beeData.hitDistance * beeData.hitDistance)
+                {
+                    //Spawn particles
+                    //velocity change
+
+                    // ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
+
+                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
+                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
+                    bee.enemyTarget = Entity.Null;
+                }
+            }
+        }
+        else if (bee.resourceTarget != Entity.Null)
+        {
+            //Debug.Log("Bee has a resource target");    
+            ecb.AddComponent(e.Index, e, new CollectingTag());
+        }
+    }
+
+
+    void CollectResource()
+    { 
+    
+    }
+
 }

@@ -12,16 +12,7 @@ using Unity.Physics;
 
 public partial class BeeDeathSystem : SystemBase
 {
-    private EndSimulationEntityCommandBufferSystem _endSimulationEntityCommandBufferSystem;
-    public float deltaTime;
     private FieldData _fieldData;
-
-    protected override void OnCreate()
-    {
-        //var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        //var resourceArr = resourceQuery.ToEntityArray(Allocator.Persistent);
-        _endSimulationEntityCommandBufferSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-    }
 
     protected override void OnStartRunning()
     {
@@ -31,7 +22,7 @@ public partial class BeeDeathSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        deltaTime = Time.DeltaTime;
+        var deltaTime = Time.DeltaTime;
 
 
         var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
@@ -96,8 +87,6 @@ public partial class BeeDeathSystem : SystemBase
 [BurstCompile]
 public partial struct DeadBeeJob : IJobEntity
 {
-
-    //public EntityCommandBuffer ecb;
     public EntityCommandBuffer.ParallelWriter ecb;
     [ReadOnly] public NativeArray<Entity> deadBees;
     [ReadOnly] public NativeArray<Entity> resources;
@@ -174,8 +163,6 @@ public partial struct DeleteDeadBee : IJobEntity
 
     void Execute(Entity e, ref Bee bee, in DeadTag tag)
     {
-        //bee.dead = true;
-        // Debug.Log("Deleted bee");
         bee.deathTimer -= dt / 10f;
         float3 scale = bee.beeScale;
         scale *= Mathf.Sqrt(bee.deathTimer);

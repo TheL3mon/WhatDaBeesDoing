@@ -22,8 +22,8 @@ public partial class BeeSpawnSystem : SystemBase
     private FieldData _fieldData;
     private ResourceData _resourceData;
     private EntityCommandBuffer _ecb;
-    private float3 minPos = new float3(-30, 0, -15);
-    private float3 maxPos = new float3(30, 0, 15);
+    private float3 minPos = new float3(-30, 0, -13);
+    private float3 maxPos = new float3(30, 0, 13);
     private float3 zero = new float3(0, 0, 0);
     public Random _random;
     bool buttonpressed = false;
