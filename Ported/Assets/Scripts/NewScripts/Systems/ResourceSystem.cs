@@ -31,9 +31,9 @@ public partial class ResourceSystem : SystemBase
 
         var rd = _resourceData;
 
-        var gridCounts = new int2((int)(_fieldData.size.x/rd.resourceSize), (int)(_fieldData.size.y/rd.resourceSize));
-        var gridSize = new Vector2(_fieldData.size.x/gridCounts.x, _fieldData.size.z/gridCounts.y);
-        var minGridPos = new Vector2((gridCounts.x-1f)*-.5f*gridSize.x,(gridCounts.y-1f)*-.5f*gridSize.y);
+        var gridCounts = new int2((int)(_fieldData.size.x / rd.resourceSize), (int)(_fieldData.size.y / rd.resourceSize));
+        var gridSize = new Vector2(_fieldData.size.x / gridCounts.x, _fieldData.size.z / gridCounts.y);
+        var minGridPos = new Vector2((gridCounts.x - 1f) * -.5f * gridSize.x, (gridCounts.y - 1f) * -.5f * gridSize.y);
 
         _resourceData.gridCounts = gridCounts;
         _resourceData.gridSize = gridSize;
@@ -101,7 +101,7 @@ public partial class ResourceSystem : SystemBase
         public ResourceData rd;
         public FieldData fd;
         public float dt;
-        public NativeArray<int> stackHeights;
+        public NativeList<int> stackHeights;
         //public NativeParallelHashMap<int, Resource> resourceHashMap;
 
         void Execute(Entity resourceEntity, ref Resource resource, in FallingResourceTag frt)
@@ -188,7 +188,7 @@ public partial class ResourceSystem : SystemBase
         public ResourceData rd;
         public Entity blueBee;
         public Entity yellowBee;
-
+        public uint seed;
         void Execute(Entity resourceEntity, ref Resource resource, in SpawnBeeTag sbt)
         {
             //Debug.Log("Bee spawning should happen here");
@@ -201,13 +201,21 @@ public partial class ResourceSystem : SystemBase
                     newBee = ecb.Instantiate(yellowBee);
                 else
                     newBee = ecb.Instantiate(blueBee);
-                   
+
                 var newTranslation = new Translation
                 {
                     Value = resource.position
                 };
 
+                var newScale = new NonUniformScale
+                {
+                    Value = new float3(1)
+                };
+
+
                 ecb.SetComponent(newBee, newTranslation);
+                //ecb.SetComponent(newBee, new Bee { seed = seed });
+                ecb.AddComponent(newBee, newScale);
                 ecb.RemoveComponent(resourceEntity, typeof(SpawnBeeTag));
 
             }
