@@ -126,7 +126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9bd867ce0dca0242b5ebffa60cd0566, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flightJitter: 200
+  flightJitter: 500
   teamAttraction: 5
   teamRepulsion: 4
   damping: 0.1
@@ -396,7 +396,7 @@ MonoBehaviour:
     y: 0
     z: 0
     w: 0
-  team: 1
+  team: 0
 --- !u!114 &-6777967451612022450
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -11,9 +11,17 @@ public partial class BeeBehaviorSystem : SystemBase
 {
     private static ResourceData _resourceData;
     private Random _random;
+    private Entity particlePrefab;
+
+    protected override void OnCreate()
+    {
+        base.OnCreate();
+    }
+
     protected override void OnUpdate()
     {
         _random = new Random((uint)UnityEngine.Random.Range(1, 500000));
+        particlePrefab = GetSingleton<ParticleData>().particlePrefab;
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
         _resourceData = ResourceSystem._resourceData;
@@ -56,10 +64,11 @@ public partial class BeeBehaviorSystem : SystemBase
             resourceData = _resourceData,
             resourceStatus = resourceStatus,
             stackHeights = stackHeights,
+            particlePrefab = particlePrefab,
             dt = Time.DeltaTime,
-            ecb = ecb.AsParallelWriter(),
+            ecb = ecb,
             random = _random
-        }.ScheduleParallel(collectingJob);
+        }.Schedule(collectingJob);
 
         targetingJob.Complete();
 
@@ -88,6 +97,7 @@ public partial struct CollectResourceJob : IJobEntity
 
     public EntityCommandBuffer ecb;
 
+    public FieldData fd;
 
     public Random random;
 
@@ -153,14 +163,26 @@ public partial struct CollectResourceJob : IJobEntity
             {
                 float3 targetPos;
 
+
+
+                //Vector3 targetPos = new Vector3(-Field.size.x * .45f + Field.size.x * .9f * bee.team, 0f, bee.position.z);
+
+
+                //if (bee.team == 0)
+                //{
+                //    targetPos = new float3(50, 0, 0);
+                //}
+                //else
+                //{
+
+                //HACKY
+                int side = 0;
                 if (bee.team == 0)
-                {
-                    targetPos = new float3(50, 0, 0);
-                }
-                else
-                {
-                    targetPos = new float3(-50, 0, 0);
-                }
+                    side = 1;
+
+                targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * side, 0f, positions[e].Value.z);
+                    //targetPos = new float3(-50, random.NextFloat(0, fd.size.y), random.NextFloat(0, fd.size.z));
+                //}
 
                 //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
                 var delta = targetPos - positions[e].Value;
@@ -211,8 +233,10 @@ public partial struct TargetingJob : IJobEntity
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
     [ReadOnly] public ResourceData resourceData;
     [ReadOnly] public NativeList<int> stackHeights;
+    public Entity particlePrefab;
     public float dt;
-    public EntityCommandBuffer.ParallelWriter ecb;
+    public EntityCommandBuffer ecb;
+    //public EntityCommandBuffer.ParallelWriter ecb;
 
     public Unity.Mathematics.Random random;
 
@@ -251,7 +275,7 @@ public partial struct TargetingJob : IJobEntity
                 if (status.height == stackHeights[index])
                 {
                     bee.resourceTarget = resource;
-                    ecb.AddComponent(e.Index, e, new CollectingTag());
+                    ecb.AddComponent(e, new CollectingTag());
                 }
                 else
                 {
@@ -278,8 +302,10 @@ public partial struct TargetingJob : IJobEntity
 
                     // ParticleSystem._instance.InstantiateBloodParticle(ecb, positions[e].Value, new float3(1, -10, 1));
 
-                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
-                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
+                    ParticleSystem.InstantiateBloodParticle(ecb, particlePrefab,positions[e].Value, new float3(1, -10, 1));
+
+                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
+                    ecb.AddComponent(bee.enemyTarget, new DeadTag());
                     bee.enemyTarget = Entity.Null;
                 }
             }
@@ -287,7 +313,7 @@ public partial struct TargetingJob : IJobEntity
         else if (bee.resourceTarget != Entity.Null)
         {
             //Debug.Log("Bee has a resource target");    
-            ecb.AddComponent(e.Index, e, new CollectingTag());
+            ecb.AddComponent(e, new CollectingTag());
         }
     }
 
