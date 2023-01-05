@@ -396,7 +396,7 @@ MonoBehaviour:
     y: 0
     z: 0
     w: 0
-  team: 0
+  team: 1
 --- !u!114 &-6777967451612022450
 MonoBehaviour:
   m_ObjectHideFlags: 0

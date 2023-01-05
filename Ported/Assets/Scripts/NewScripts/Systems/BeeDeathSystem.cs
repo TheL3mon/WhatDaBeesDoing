@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
 using Unity.Burst;
@@ -7,8 +5,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Unity.Entities.UniversalDelegates;
-using Unity.Physics;
 
 public partial class BeeDeathSystem : SystemBase
 {
@@ -24,6 +20,8 @@ public partial class BeeDeathSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        this.Enabled = true;
+
         var deltaTime = Time.DeltaTime;
 
 

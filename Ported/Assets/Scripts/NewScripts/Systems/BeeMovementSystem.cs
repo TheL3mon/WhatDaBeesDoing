@@ -7,9 +7,6 @@ using UnityEngine;
 using Random = Unity.Mathematics.Random;
 using ReadOnlyAttribute = Unity.Collections.ReadOnlyAttribute;
 using Unity.Burst;
-using static UnityEngine.Rendering.DebugUI;
-using Mono.Cecil;
-using static UnityEditor.PlayerSettings;
 
 public partial class BeeMovementSystem : SystemBase
 {
@@ -25,6 +22,8 @@ public partial class BeeMovementSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        this.Enabled = true;
+
         _random = new Random();
         _random.InitState((uint)UnityEngine.Random.Range(0, 100000));
 
@@ -34,6 +33,12 @@ public partial class BeeMovementSystem : SystemBase
         var yellowArr = yellowTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
         var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
+
+        var aliveQuery = GetEntityQuery(ComponentType.ReadOnly<AliveTag>());
+        var aliveArr = aliveQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
+
+        var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
+        var deadArr = deadQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
         var positions = GetComponentDataFromEntity<Translation>(true);
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -49,15 +54,9 @@ public partial class BeeMovementSystem : SystemBase
             field = _fieldData
         }.ScheduleParallel();
 
-        //var containJob = new ContainmentJob
-        //{
-        //    ecb = ecb.AsParallelWriter(),
-        //    field = _fieldData
-        //}.ScheduleParallel(movementJob);
-
         movementJob.Complete();
 
-        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length));
+        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Alive: " + aliveArr.Length + ", Dead: " + deadArr.Length);
 
         //Dynamic buffers is an option
         blueArr.Dispose();
@@ -70,69 +69,7 @@ public partial class BeeMovementSystem : SystemBase
     }
 }
 
-[BurstCompile]
-public partial struct ContainmentJob : IJobEntity
-{
-    public EntityCommandBuffer.ParallelWriter ecb;
-    [ReadOnly] public FieldData field;
-
-    //public Unity.Mathematics.Random random;
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in Translation pos)
-    {
-        if (float.IsNaN(velocity.Linear.x) || float.IsNaN(velocity.Linear.y) || float.IsNaN(velocity.Linear.z))
-            return;
-
-        if (float.IsNaN(pos.Value.x) || float.IsNaN(pos.Value.y) || float.IsNaN(pos.Value.z))
-            return;
-
-        float3 newPos = pos.Value;
-
-        if (System.Math.Abs(pos.Value.x) > field.size.x * .48f)
-        {
-            newPos.x = (field.size.x * .5f) * Mathf.Sign(pos.Value.x);
-
-            velocity.Linear.x *= -1f;
-            velocity.Linear.y *= .8f;
-            velocity.Linear.z *= .8f;
-        }
-
-        if (System.Math.Abs(pos.Value.z) > field.size.z * .48f)
-        {
-            newPos.z = (field.size.z * .5f) * Mathf.Sign(pos.Value.z);
-
-            velocity.Linear.z *= -1f;
-            velocity.Linear.x *= .8f;
-            velocity.Linear.y *= .8f;
-        }
-
-
-        if (System.Math.Abs(pos.Value.y) > field.size.y * .48f)
-        {
-            newPos.y = (field.size.y * .5f) * Mathf.Sign(pos.Value.y);
-
-            //if (bee.dead && (pos.Value.y > 0.0f))
-            //{
-            //    velocity.Linear = float3.zero;
-            //}
-            //else
-            //{
-            velocity.Linear.y *= -1f;
-            velocity.Linear.z *= .8f;
-            velocity.Linear.x *= .8f;
-            //}
-        }
-
-        //if(float.IsNaN(velocity.Linear.x))
-        //    Debug.Log(e.Index + " pos: " + pos + " newpos:" + newPos);
-
-        //ecb.SetComponent(e.Index, e, new Translation
-        //{
-        //    Value = newPos
-        //});
-    }
-}
-
-[BurstCompile]
+//[BurstCompile]
 public partial struct MoveBeeJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
@@ -147,6 +84,14 @@ public partial struct MoveBeeJob : IJobEntity
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, ref Rotation rotation, ref NonUniformScale nus, in BeeData beeData)
     {
         var beePos = positions[e];
+
+        if (float.IsNaN(positions[e].Value.x) || float.IsNaN(positions[e].Value.y) || float.IsNaN(positions[e].Value.z))
+        {
+            return;
+        }
+
+        var oldPos = beePos.Value;
+        //Debug.Log(e.Index + " beePos before: " + oldPos);
 
         if (bee.dead)
         {
@@ -286,5 +231,8 @@ public partial struct MoveBeeJob : IJobEntity
         rotation.Value = rot;
 
         nus.Value = bee.beeScale;
+
+        if (float.IsNaN(oldPos.x) || float.IsNaN(beePos.Value.x))
+            Debug.Log(e.Index + " beePos before: " + oldPos + ", after: " + beePos.Value);
     }
 }

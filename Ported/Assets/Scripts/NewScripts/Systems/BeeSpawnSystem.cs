@@ -195,6 +195,8 @@ public partial struct SpawnJob : IJobEntity
 
             ecb.SetComponent(newBee, newTranslation);
             ecb.AddComponent(newBee, newScale);
+
+            //Debug.Log("StarPos: " + newTranslation.Value);
         }
     }
 }
