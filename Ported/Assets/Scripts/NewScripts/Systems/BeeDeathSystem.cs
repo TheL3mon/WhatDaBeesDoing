@@ -48,11 +48,15 @@ public partial class BeeDeathSystem : SystemBase
                 positions = positions,
             }.ScheduleParallel();
 
+            deadBeeJob.Complete();
+
             var clearReferencesJob = new ClearReferencesJob
             {
                 beeStatuses = beeStatus
 
             }.ScheduleParallel(deadBeeJob);
+
+            clearReferencesJob.Complete();
 
             var deleteBeeJob = new DeleteDeadBee
             {

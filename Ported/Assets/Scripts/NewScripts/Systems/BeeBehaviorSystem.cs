@@ -20,13 +20,13 @@ public partial class BeeBehaviorSystem : SystemBase
         var stackHeights = ResourceSystem._stackHeights;
 
         var blueTeamQuery = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
-        var blueArr = blueTeamQuery.ToEntityArray(Allocator.TempJob);
+        var blueArr = blueTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
         var yellowTeamQuery = GetEntityQuery(ComponentType.ReadOnly<YellowTeamTag>());
-        var yellowArr = yellowTeamQuery.ToEntityArray(Allocator.TempJob);
+        var yellowArr = yellowTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        var resourceArr = resourceQuery.ToEntityArray(Allocator.TempJob);
+        var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
         var positions = GetComponentDataFromEntity<Translation>(true);
         var resourceStatus = GetComponentDataFromEntity<Resource>(true);
@@ -44,6 +44,8 @@ public partial class BeeBehaviorSystem : SystemBase
             ecb = ecb,
             random = _random
         }.Schedule();
+
+        collectingJob.Complete();
 
         var targetingJob = new TargetingJob
         {
