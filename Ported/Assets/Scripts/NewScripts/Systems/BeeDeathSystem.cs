@@ -13,10 +13,12 @@ using Unity.Physics;
 public partial class BeeDeathSystem : SystemBase
 {
     private FieldData _fieldData;
+    private int cleanUpLimit;
 
     protected override void OnStartRunning()
     {
         _fieldData = GetSingleton<FieldData>();
+        cleanUpLimit = 1000;
     }
 
 
@@ -27,51 +29,64 @@ public partial class BeeDeathSystem : SystemBase
 
         var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
         var deadArr = deadQuery.ToEntityArray(Allocator.Persistent);
+        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-        if (deadArr.Length > 0)
+        var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
+        var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
+
+        var deleteQuery = GetEntityQuery(ComponentType.ReadOnly<DeleteTag>());
+        var deleteArr = deleteQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
+
+        var beeStatus = GetComponentDataFromEntity<Bee>(true);
+        var resourceStatus = GetComponentDataFromEntity<Resource>(true);
+        var positions = GetComponentDataFromEntity<Translation>(true);
+
+        var deadBeeJob = new DeadBeeJob
         {
-            var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+            ecb = ecb.AsParallelWriter(),
+            deadBees = deadArr,
+            resources = resourceArr,
+            resourceStatus = resourceStatus,
+            positions = positions,
+            dt = deltaTime
+        }.ScheduleParallel();
 
-            var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-            var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
+        deadBeeJob.Complete();
 
-            var beeStatus = GetComponentDataFromEntity<Bee>(true);
-            var resourceStatus = GetComponentDataFromEntity<Resource>(true);
-            var positions = GetComponentDataFromEntity<Translation>(true);
+        var clearReferencesJob = new ClearReferencesJob
+        {
+            beeStatuses = beeStatus
 
-            var deadBeeJob = new DeadBeeJob
-            {
-                ecb = ecb.AsParallelWriter(),
-                deadBees = deadArr,
-                resources = resourceArr,
-                resourceStatus = resourceStatus,
-                positions = positions,
-            }.ScheduleParallel();
+        }.ScheduleParallel(deadBeeJob);
 
-            deadBeeJob.Complete();
+        clearReferencesJob.Complete();
 
-            var clearReferencesJob = new ClearReferencesJob
-            {
-                beeStatuses = beeStatus
+        var clearReferencesResourceJob = new ClearResourceReferencesJob
+        {
+            resourceStatuses = resourceStatus,
+            beeStatuses = beeStatus,
+            ecb = ecb.AsParallelWriter()
+        }.Schedule(clearReferencesJob);
 
-            }.ScheduleParallel(deadBeeJob);
+        clearReferencesResourceJob.Complete();
 
-            clearReferencesJob.Complete();
+        //Debug.Log("Deleted bees " + deleteArr.Length);
 
+        if (deleteArr.Length > cleanUpLimit)
+        {
             var deleteBeeJob = new DeleteDeadBee
             {
                 ecb = ecb.AsParallelWriter(),
-                dt = deltaTime,
                 positions = positions
-            }.ScheduleParallel(clearReferencesJob);
-
+            }.ScheduleParallel(clearReferencesResourceJob);
             deleteBeeJob.Complete();
-            ecb.Playback(EntityManager);
-
-            resourceArr.Dispose();
-            ecb.Dispose();
         }
+
+        ecb.Playback(EntityManager);
+
         deadArr.Dispose();
+        resourceArr.Dispose();
+        ecb.Dispose();
     }
 }
 
@@ -80,12 +95,13 @@ public partial class BeeDeathSystem : SystemBase
 public partial struct DeadBeeJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
+    public float dt;
     [ReadOnly] public NativeArray<Entity> deadBees;
     [ReadOnly] public NativeArray<Entity> resources;
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
 
-    void Execute(Entity e, ref Bee bee, in DeadTag tag)
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in DeadTag tag)
     {
         if (!bee.dead && deadBees.Contains(e))
         {
@@ -117,6 +133,32 @@ public partial struct DeadBeeJob : IJobEntity
                 }
             }
         }
+
+        if (bee.dead)
+        {
+            bee.deathTimer -= dt / 10f;
+
+            if (bee.deathTimer > 0)
+            {
+
+                float3 scale = bee.beeScale;
+                scale *= Mathf.Sqrt(bee.deathTimer);
+
+                var newScale = new NonUniformScale
+                {
+                    Value = scale
+                };
+
+                //ecb.SetComponent(e, newScale);
+                ecb.SetComponent(entityIndex, e, newScale);
+            }
+            else
+            {
+                bee.deathTimer = 0f;
+                ecb.AddComponent(entityIndex, e, new DeleteTag());
+                ecb.RemoveComponent<DeadTag>(entityIndex, e);
+            }
+        }
     }
 }
 
@@ -133,7 +175,33 @@ public partial struct ClearReferencesJob : IJobEntity
             bee.enemyTarget = Entity.Null;
         }
     }
+}
 
+[BurstCompile]
+public partial struct ClearResourceReferencesJob : IJobEntity
+{
+    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Resource> resourceStatuses;
+    [NativeDisableContainerSafetyRestriction][ReadOnly] public ComponentDataFromEntity<Bee> beeStatuses;
+    public EntityCommandBuffer.ParallelWriter ecb;
+
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Resource resource, in Translation position)
+    {
+
+        if (resource.holder != Entity.Null && beeStatuses[resource.holder].dead)
+        {
+            resource.holder = Entity.Null;
+
+            var r = new Resource();
+            r.position = position.Value;
+            r.height = resource.height;
+            r.holder = Entity.Null;
+            r.holderTeam = -1;
+
+            var fallingResourceTag = new FallingResourceTag();
+            ecb.SetComponent(entityIndex, e, r);
+            ecb.AddComponent(entityIndex, e, fallingResourceTag);
+        }
+    }
 }
 
 
@@ -143,27 +211,15 @@ public partial struct DeleteDeadBee : IJobEntity
 
     public EntityCommandBuffer.ParallelWriter ecb;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
-    public float dt;
 
-    void Execute(Entity e, ref Bee bee, in DeadTag tag)
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in DeleteTag tag)
     {
-        bee.deathTimer -= dt / 10f;
-        float3 scale = bee.beeScale;
-        scale *= Mathf.Sqrt(bee.deathTimer);
 
-        var newScale = new NonUniformScale
+        if (bee.deathTimer <= 0)
         {
-            Value = scale
-        };
-
-        //ecb.SetComponent(e, newScale);
-        ecb.SetComponent(e.Index, e, newScale);
-
-
-        if (bee.deathTimer < 0)
-        {
+            //Debug.Log("Bee should be deleted");
             //ecb.DestroyEntity(e);
-            ecb.DestroyEntity(e.Index, e);
+            ecb.DestroyEntity(entityIndex, e);
         }
     }
 

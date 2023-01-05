@@ -216,7 +216,7 @@ public partial struct TargetingJob : IJobEntity
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
     {
         if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
         {
@@ -251,7 +251,7 @@ public partial struct TargetingJob : IJobEntity
                 if (status.height == stackHeights[index])
                 {
                     bee.resourceTarget = resource;
-                    ecb.AddComponent(e.Index, e, new CollectingTag());
+                    ecb.AddComponent(entityIndex, e, new CollectingTag());
                 }
                 else
                 {
@@ -287,7 +287,7 @@ public partial struct TargetingJob : IJobEntity
         else if (bee.resourceTarget != Entity.Null)
         {
             //Debug.Log("Bee has a resource target");    
-            ecb.AddComponent(e.Index, e, new CollectingTag());
+            ecb.AddComponent(entityIndex, e, new CollectingTag());
         }
     }
 
