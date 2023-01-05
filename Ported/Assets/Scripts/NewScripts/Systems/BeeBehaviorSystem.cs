@@ -240,7 +240,7 @@ public partial struct TargetingJob : IJobEntity
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, ref PhysicsVelocity velocity, in BeeData beeData, in AliveTag alive)
     {
         if (bee.enemyTarget == Entity.Null && bee.resourceTarget == Entity.Null)
         {
