@@ -21,7 +21,7 @@ public partial class BeeBehaviorSystem : SystemBase
 
     protected override void OnUpdate()
     {
-
+        var dt = Time.DeltaTime;
         _random = new Random((uint)UnityEngine.Random.Range(1, 500000));
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -53,7 +53,7 @@ public partial class BeeBehaviorSystem : SystemBase
             resourceStatus = resourceStatus,
             stackHeights = stackHeights,
             particlePrefab = _particlePrefab,
-            dt = Time.DeltaTime,
+            dt = dt,
             ecb = ecb.AsParallelWriter(),
             random = _random
         }.ScheduleParallel();
@@ -69,7 +69,7 @@ public partial class BeeBehaviorSystem : SystemBase
             positions = positions,
             stackHeights = stackHeights,
             resourceData = _resourceData,
-            dt = Time.DeltaTime,
+            dt = dt,
             ecb = ecb,
             random = _random
         }.Schedule(Dependency);
@@ -116,19 +116,24 @@ public partial struct CollectResourceJob : IJobEntity
             return;
         }
 
-        var target = bee.resourceTarget;
-        var index = resources.IndexOf(target);
-
-        if (index == -1)
+        if (bee.resourceTarget == Entity.Null)
         {
             ecb.RemoveComponent<CollectingTag>(e);
-            bee.resourceTarget = Entity.Null;
             return;
         }
 
-        var resource = resources[index];
-        var status = resourceStatus[resource];
-        bee.resourceTarget = resource;
+        //var index = resources.IndexOf(target);
+
+        //if (index == -1)
+        //{
+        //    ecb.RemoveComponent<CollectingTag>(e);
+        //    bee.resourceTarget = Entity.Null;
+        //    return;
+        //}
+
+        //var resource = resources[index];
+        var status = resourceStatus[bee.resourceTarget];
+        //bee.resourceTarget = resource;
 
         int beeTeam = bee.team;
         int resourceHolderTeam = status.holderTeam;
@@ -143,6 +148,7 @@ public partial struct CollectResourceJob : IJobEntity
                 return;
             }
             int resourceIndex = status.gridX + status.gridY * resourceData.gridCounts.x;
+
             var stackHeight = stackHeights[resourceIndex];
             var resourceHeight = status.height;
 
@@ -169,7 +175,7 @@ public partial struct CollectResourceJob : IJobEntity
                     return;
                 }
 
-                var delta = positions[resource].Value - positions[e].Value;
+                var delta = positions[bee.resourceTarget].Value - positions[e].Value;
                 float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
                 if (sqrDist > beeData.grabDistance * beeData.grabDistance)
                 {
@@ -275,6 +281,8 @@ public partial struct TargetingJob : IJobEntity
 
     void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, ref PhysicsVelocity velocity, in Translation position, in BeeData beeData, in AliveTag alive)
     {
+        bee.isAttacking = false;
+        bee.isHoldingResource = false;
 
         //if (!entityManager.Exists(bee.resourceTarget))
         //    bee.resourceTarget = Entity.Null;

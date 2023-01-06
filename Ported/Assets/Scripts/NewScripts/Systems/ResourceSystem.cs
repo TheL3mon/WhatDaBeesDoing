@@ -141,10 +141,6 @@ public partial class ResourceSystem : SystemBase
 
             if (resource.position.y < floorY)
             {
-                stackHeights[index]++;
-                resource.height = stackHeights[index];
-                resource.position = pos;
-                resource.velocity = float3.zero;
 
                 if (Mathf.Abs(resource.position.x) > fd.size.x * .3f)
                 {
@@ -157,6 +153,13 @@ public partial class ResourceSystem : SystemBase
                     spawnBeeTag.team = team;
                     ecb.AddComponent(resourceEntity, spawnBeeTag);
                     //Debug.Log("spawnBeeTag added");
+                }
+                else
+                {
+                    stackHeights[index]++;
+                    resource.height = stackHeights[index];
+                    resource.position = pos;
+                    resource.velocity = float3.zero;
                 }
                 //Debug.Log("Final pos: (" + resource.position + ") Grid coords: (" + resource.gridX + ", " + resource.gridY + ")");
                 //Debug.Log("Grid coords: " + resource.position);

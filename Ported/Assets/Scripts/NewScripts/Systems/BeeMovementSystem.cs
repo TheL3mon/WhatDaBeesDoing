@@ -61,7 +61,7 @@ public partial class BeeMovementSystem : SystemBase
 
         Dependency.Complete();
 
-        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Alive: " + aliveArr.Length + ", Dead: " + deadArr.Length);
+        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Blue: " + blueArr.Length + " Yellow: " + yellowArr.Length + ", Dead: " + deadArr.Length);
 
         //Dynamic buffers is an option
         blueArr.Dispose();
@@ -121,23 +121,17 @@ public partial struct MoveBeeJob : IJobEntity
         //if(float.IsNaN(velocity.Linear.x))
         //    Debug.Log(e.Index + " before: " + old_velocity + " after:" + velocity.Linear);
 
-
-        Entity randomAttractor;
-        Entity randomRepeller;
         Translation randomAttractorPos = new Translation();
         Translation randomRepellerPos = new Translation();
 
         if (bee.team == 0)
         {
-            randomAttractor = blueTeam[random.NextInt(0, blueTeam.Length - 1)];
-            randomAttractorPos = positions[randomAttractor];
+            randomAttractorPos = positions[blueTeam[random.NextInt(0, blueTeam.Length - 1)]];
         }
         else
         {
-            randomRepeller = yellowTeam[random.NextInt(0, yellowTeam.Length - 1)];
-            randomRepellerPos = positions[randomRepeller];
+            randomRepellerPos = positions[yellowTeam[random.NextInt(0, yellowTeam.Length)]];
         }
-
 
         var deltaAttract = randomAttractorPos.Value - beePos.Value;
         var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
@@ -160,34 +154,24 @@ public partial struct MoveBeeJob : IJobEntity
         if (System.Math.Abs(newPos.x) > field.size.x * .48f)
         {
             vel.x = arenaAttraction * -Mathf.Sign(beePos.Value.x);
-            //vel.x *= -1.0f;
             vel.y *= .8f;
             vel.z *= .8f;
-
-            //if (System.Math.Abs(vel.x) < 5.0f)
-            //    vel.x = arenaAttraction * -Mathf.Sign(beePos.Value.x);
 
         }
 
         if (System.Math.Abs(newPos.z) > field.size.z * .48f)
         {
             vel.z = vel.z = arenaAttraction * -Mathf.Sign(beePos.Value.z);
-            //vel.z *= -1.0f;
             vel.x *= .8f;
             vel.y *= .8f;
-            //if (System.Math.Abs(vel.z) < 5.0f)
-            //    vel.z = arenaAttraction * -Mathf.Sign(beePos.Value.z);
         }
 
 
         if (System.Math.Abs(newPos.y) > field.size.y * .48f)
         {
             vel.y = arenaAttraction * -Mathf.Sign(beePos.Value.y);
-            //vel.y *= -1.0f;
             vel.z *= .8f;
             vel.x *= .8f;
-            //if (System.Math.Abs(vel.y) < 5.0f)
-            //    vel.y = arenaAttraction * -Mathf.Sign(beePos.Value.y);
         }
 
         velocity.Linear = vel;

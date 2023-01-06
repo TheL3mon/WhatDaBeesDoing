@@ -1,17 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
-using static UnityEngine.Rendering.DebugUI;
-using System;
-using UnityEngine.UIElements;
-using Unity.Collections;
-using Unity.Jobs;
-using static UnityEngine.ParticleSystem;
 
 public partial class BeeSpawnSystem : SystemBase
 {
@@ -22,10 +14,11 @@ public partial class BeeSpawnSystem : SystemBase
     private FieldData _fieldData;
     private ResourceData _resourceData;
     private EntityCommandBuffer _ecb;
-    private float3 minPos = new float3(-30, 0, -13);
-    private float3 maxPos = new float3(30, 0, 13);
-    private float3 zero = new float3(0, 0, 0);
+    private float3 minPos = new float3(-15, 0, -6);
+    private float3 maxPos = new float3(15, 0, 6);
     public Random _random;
+    private float spawnTimer = 0f;
+    private float spawnRate = 0f;
     bool buttonpressed = false;
     float timer;
     const int resourceSpawnPerFrame = 100;
@@ -48,42 +41,48 @@ public partial class BeeSpawnSystem : SystemBase
         _random.InitState(4554);
         _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
+        float3 pos = new float3(-1, 0, 0) * (-_fieldData.size.x * .4f + _fieldData.size.x * .8f * 0);
+        var color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
         for (int i = 0; i < beeSpawnData.initialSpawnPerTeam; i++)
         {
-            var nextRandom = _random.NextFloat3(minPos, maxPos);
+            //var nextRandom = _random.NextFloat3(minPos, maxPos);
             var blueSpawn = new SpawnJob
             {
                 ecb = _ecb,
                 team = 0,
                 bee = _blueTeamPrefab,
-                position = nextRandom,
-                seed = _random.NextUInt()
+                color = color,
+                position = pos
             }.Schedule();
             blueSpawn.Complete();
         }
 
+        pos = new float3(-1, 0, 0) * (-_fieldData.size.x * .4f + _fieldData.size.x * .8f * 1);
+        color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
+
         for (int i = 0; i < beeSpawnData.initialSpawnPerTeam; i++)
         {
-            var nextRandom = _random.NextFloat3(minPos, maxPos);
+            //var nextRandom = _random.NextFloat3(minPos, maxPos);
             var yellowSpawn = new SpawnJob
             {
                 ecb = _ecb,
                 team = 1,
                 bee = _yellowTeamPrefab,
-                position = nextRandom,
-                seed = _random.NextUInt()
+                color = color,
+                position = pos,
             }.Schedule();
             yellowSpawn.Complete();
         }
 
-        for (int i = 0; i < resourceSpawnPerFrame; i++)
+
+        for (int i = 0; i < _resourceData.startResourceCount; i++)
         {
-            var nextRandom = _random.NextFloat3(minPos, maxPos);
+            pos = new float3(_resourceData.minGridPos.x * .25f + _random.NextFloat() * _fieldData.size.x * .25f, _random.NextFloat() * 10f, _resourceData.minGridPos.y + _random.NextFloat() * _fieldData.size.z);
             var intialResourceSpawns = new SpawnJobResource
             {
                 ecb = _ecb,
                 resourcePrefab = _resourcePrefab,
-                position = nextRandom,
+                position = pos,
                 fieldData = _fieldData
             }.Schedule();
             intialResourceSpawns.Complete();
@@ -161,6 +160,7 @@ public partial class BeeSpawnSystem : SystemBase
             ecb.Playback(EntityManager);
             ecb.Dispose();
         }
+
     }
 }
 
@@ -169,6 +169,7 @@ public partial struct SpawnJob : IJobEntity
 {
     public EntityCommandBuffer ecb;
     public int team;
+    public Color color;
     public uint seed;
     public Entity bee;
     public float3 position;
@@ -192,6 +193,11 @@ public partial struct SpawnJob : IJobEntity
                 Value = position
             };
 
+            var colorComponent = new ParticleColorComponent
+            {
+                Value = color
+            };
+
             //ecb.SetComponent(newBee, new Bee
             //{
             //    seed = seed
@@ -201,6 +207,7 @@ public partial struct SpawnJob : IJobEntity
 
             ecb.SetComponent(newBee, newTranslation);
             ecb.AddComponent(newBee, newScale);
+            ecb.SetComponent(newBee, colorComponent);
 
             //Debug.Log("StarPos: " + newTranslation.Value);
         }
