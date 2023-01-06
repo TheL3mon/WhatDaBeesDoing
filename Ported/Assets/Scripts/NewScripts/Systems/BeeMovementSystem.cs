@@ -86,24 +86,27 @@ public partial struct MoveBeeJob : IJobEntity
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, ref Rotation rotation, ref NonUniformScale nus, in BeeData beeData)
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, ref Rotation rotation, ref NonUniformScale nus, in Translation position, in BeeData beeData)
     {
-        var beePos = positions[e];
-
-        if (float.IsNaN(positions[e].Value.x) || float.IsNaN(positions[e].Value.y) || float.IsNaN(positions[e].Value.z))
+        if (float.IsNaN(position.Value.x) || float.IsNaN(position.Value.y) || float.IsNaN(position.Value.z))
         {
             return;
         }
 
-        var oldPos = beePos.Value;
+        var oldPos = position.Value;
         //Debug.Log(e.Index + " beePos before: " + oldPos);
+
 
         if (bee.dead)
         {
-            if (System.Math.Abs(beePos.Value.y) > field.size.y * .48f)
-                velocity.Linear = float3.zero;
+            if (System.Math.Abs(position.Value.y) > field.size.y * .48f)
+                bee.velocity = float3.zero;
             else
-                velocity.Linear = field.gravity * new float3(0, -9.8f, 0);
+            {
+                bee.velocity = field.gravity * new float3(0, -9.8f, 0);
+                var pos = position.Value + (dt * bee.velocity);
+                ecb.SetComponent(entityIndex, e, new Translation { Value = pos });
+            }
             return;
         }
 
@@ -114,9 +117,8 @@ public partial struct MoveBeeJob : IJobEntity
         dir -= 0.5f;
         dir *= random.NextFloat(0, 1);
 
-        var vel = velocity.Linear;
-        vel  += dir * (beeData.flightJitter * dt);
-        vel *= (1f - beeData.damping);
+        bee.velocity += dir * (beeData.flightJitter * dt);
+        bee.velocity *= (1f - beeData.damping);
 
         //if(float.IsNaN(velocity.Linear.x))
         //    Debug.Log(e.Index + " before: " + old_velocity + " after:" + velocity.Linear);
@@ -133,58 +135,62 @@ public partial struct MoveBeeJob : IJobEntity
             randomRepellerPos = positions[yellowTeam[random.NextInt(0, yellowTeam.Length)]];
         }
 
-        var deltaAttract = randomAttractorPos.Value - beePos.Value;
+        var deltaAttract = randomAttractorPos.Value - position.Value;
         var distAttract = Mathf.Sqrt(deltaAttract.x * deltaAttract.x + deltaAttract.y * deltaAttract.y + deltaAttract.z * deltaAttract.z);
         if (distAttract > 0f)
         {
-            vel += deltaAttract * (beeData.teamAttraction * dt / distAttract);
+            bee.velocity += deltaAttract * (beeData.teamAttraction * dt / distAttract);
         }
 
-        var delta = randomRepellerPos.Value - beePos.Value;
+        var delta = randomRepellerPos.Value - position.Value;
         var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
         if (dist > 0f)
         {
-            vel -= delta * (beeData.teamRepulsion * dt / dist);
+            bee.velocity -= delta * (beeData.teamRepulsion * dt / dist);
         }
 
-        var newPos = beePos.Value + (dt * vel);
+        var newPos = position.Value + (dt * bee.velocity);
 
         float arenaAttraction = 10f;
 
         if (System.Math.Abs(newPos.x) > field.size.x * .48f)
         {
-            vel.x = arenaAttraction * -Mathf.Sign(beePos.Value.x);
-            vel.y *= .8f;
-            vel.z *= .8f;
+            bee.velocity.x = arenaAttraction * -Mathf.Sign(position.Value.x);
+            bee.velocity.y *= .8f;
+            bee.velocity.z *= .8f;
 
         }
 
         if (System.Math.Abs(newPos.z) > field.size.z * .48f)
         {
-            vel.z = vel.z = arenaAttraction * -Mathf.Sign(beePos.Value.z);
-            vel.x *= .8f;
-            vel.y *= .8f;
+            bee.velocity.z = bee.velocity.z = arenaAttraction * -Mathf.Sign(position.Value.z);
+            bee.velocity.x *= .8f;
+            bee.velocity.y *= .8f;
         }
 
 
         if (System.Math.Abs(newPos.y) > field.size.y * .48f)
         {
-            vel.y = arenaAttraction * -Mathf.Sign(beePos.Value.y);
-            vel.z *= .8f;
-            vel.x *= .8f;
+            bee.velocity.y = arenaAttraction * -Mathf.Sign(position.Value.y);
+            bee.velocity.z *= .8f;
+            bee.velocity.x *= .8f;
         }
 
-        velocity.Linear = vel;
+        //position.Value += dt * bee.velocity;
+
+        newPos = position.Value + (dt * bee.velocity);
+
+        ecb.SetComponent(entityIndex, e, new Translation { Value = newPos});
 
         // only used for smooth rotation:
         float3 oldSmoothPos = bee.smoothPosition;
         if (bee.isAttacking == false)
         {
-            bee.smoothPosition = Vector3.Lerp(bee.smoothPosition, beePos.Value, dt * beeData.rotationStiffness);
+            bee.smoothPosition = Vector3.Lerp(bee.smoothPosition, position.Value, dt * beeData.rotationStiffness);
         }
         else
         {
-            bee.smoothPosition = beePos.Value;
+            bee.smoothPosition = position.Value;
         }
         bee.smoothDirection = bee.smoothPosition - oldSmoothPos;
 
@@ -194,7 +200,7 @@ public partial struct MoveBeeJob : IJobEntity
 
         if (!bee.dead)
         {
-            var velPow = (vel * vel);
+            var velPow = (bee.velocity * bee.velocity);
             var magnitude = Mathf.Sqrt(velPow.x + velPow.y + velPow.z);
 
             var stretch = Mathf.Max(1f, magnitude * beeData.speedStretch);
@@ -220,6 +226,8 @@ public partial struct MoveBeeJob : IJobEntity
         rotation.Value = rot;
 
         nus.Value = bee.beeScale;
+
+
 
         //if (float.IsNaN(oldPos.x) || float.IsNaN(beePos.Value.x))
         //    Debug.Log(e.Index + " beePos before: " + oldPos + ", after: " + beePos.Value);

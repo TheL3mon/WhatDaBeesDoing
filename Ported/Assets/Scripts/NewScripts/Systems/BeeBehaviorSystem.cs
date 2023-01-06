@@ -107,7 +107,7 @@ public partial struct CollectResourceJob : IJobEntity
 
     public Random random;
 
-    void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in CollectingTag tag, in BeeData beeData)
+    void Execute(Entity e, ref Bee bee, in CollectingTag tag, in BeeData beeData)
     {
         if (resources.Length == 0)
         {
@@ -180,7 +180,7 @@ public partial struct CollectResourceJob : IJobEntity
                 if (sqrDist > beeData.grabDistance * beeData.grabDistance)
                 {
                     //Debug.Log("Moving towards resource");
-                    velocity.Linear += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
+                    bee.velocity += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
                 }
                 else
                 {
@@ -226,7 +226,7 @@ public partial struct CollectResourceJob : IJobEntity
                 //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
                 var delta = targetPos - positions[e].Value;
                 var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-                velocity.Linear += (targetPos - positions[e].Value) * (beeData.carryForce * dt / dist);
+                bee.velocity += (targetPos - positions[e].Value) * (beeData.carryForce * dt / dist);
 
                 if (Mathf.Abs(delta.x) < 10.0f)
                 {
@@ -279,7 +279,7 @@ public partial struct TargetingJob : IJobEntity
 
     public Unity.Mathematics.Random random;
 
-    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, ref PhysicsVelocity velocity, in Translation position, in BeeData beeData, in AliveTag alive)
+    void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in Translation position, in BeeData beeData, in AliveTag alive)
     {
         bee.isAttacking = false;
         bee.isHoldingResource = false;
@@ -352,7 +352,7 @@ public partial struct TargetingJob : IJobEntity
             float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
             if (sqrDist > (beeData.attackDistance * beeData.attackDistance))
             {
-                velocity.Linear += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
+                bee.velocity += delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist));
             }
             //else if(sqrDist <= (beeData.attackDistance * beeData.attackDistance))
             else
@@ -362,7 +362,7 @@ public partial struct TargetingJob : IJobEntity
 
 
 
-                velocity.Linear += delta * (beeData.attackForce * dt / Mathf.Sqrt(sqrDist));
+                bee.velocity += delta * (beeData.attackForce * dt / Mathf.Sqrt(sqrDist));
                 if (sqrDist < beeData.hitDistance * beeData.hitDistance)
                 {
                     //Spawn particles

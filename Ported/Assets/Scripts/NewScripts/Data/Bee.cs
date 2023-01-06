@@ -19,6 +19,8 @@ public struct Bee : IComponentData
 
     public uint seed;
 
+    public float3 velocity;
+
     public float3 beeScale;
     public float size;
     public float3 smoothPosition;
