@@ -10,7 +10,6 @@ using Unity.Burst;
 
 public partial class BeeMovementSystem : SystemBase
 {
-    public static bool testing_InvincibleBees = true;
     private Random _random;
     private FieldData _fieldData;
 

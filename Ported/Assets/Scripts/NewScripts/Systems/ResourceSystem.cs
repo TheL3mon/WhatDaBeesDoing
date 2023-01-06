@@ -17,6 +17,7 @@ public partial class ResourceSystem : SystemBase
 {
     private Entity _blueTeamPrefab;
     private Entity _yellowTeamPrefab;
+    private Entity _particlePrefab;
 
     private Entity _resourcePrefab;
     private FieldData _fieldData;
@@ -66,6 +67,7 @@ public partial class ResourceSystem : SystemBase
     protected override void OnUpdate()
     {
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+        _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
 
         var dt = Time.DeltaTime;
 
@@ -81,10 +83,11 @@ public partial class ResourceSystem : SystemBase
 
         var spawnBeeFromResourceJob = new SpawnBeeFromResourceJob
         {
-            ecb = ecb,
+            ecb = ecb.AsParallelWriter(),
             rd = _resourceData,
             blueBee = _blueTeamPrefab,
-            yellowBee = _yellowTeamPrefab
+            yellowBee = _yellowTeamPrefab,
+            particlePrefab = _particlePrefab
 
         }.Schedule();
         spawnBeeFromResourceJob.Complete();
@@ -182,25 +185,26 @@ public partial class ResourceSystem : SystemBase
     }
 
 
+    [BurstCompile]
     public partial struct SpawnBeeFromResourceJob : IJobEntity
     {
-        public EntityCommandBuffer ecb;
-        public ResourceData rd;
-        public Entity blueBee;
-        public Entity yellowBee;
-        public uint seed;
-        void Execute(Entity resourceEntity, ref Resource resource, in SpawnBeeTag sbt)
+        public EntityCommandBuffer.ParallelWriter ecb;
+        [ReadOnly] public ResourceData rd;
+        [ReadOnly] public Entity blueBee;
+        [ReadOnly] public Entity yellowBee;
+        [ReadOnly] public Entity particlePrefab;
+
+        void Execute(Entity resourceEntity, [EntityInQueryIndex] int entityIndex, ref Resource resource, in Translation position, in SpawnBeeTag sbt)
         {
-            //Debug.Log("Bee spawning should happen here");
 
             for (int i = 0; i < rd.beesPerResource; i++)
             {
                 Entity newBee;
 
                 if (sbt.team == 0)
-                    newBee = ecb.Instantiate(yellowBee);
+                    newBee = ecb.Instantiate(entityIndex, yellowBee);
                 else
-                    newBee = ecb.Instantiate(blueBee);
+                    newBee = ecb.Instantiate(entityIndex, blueBee);
 
                 var newTranslation = new Translation
                 {
@@ -212,14 +216,16 @@ public partial class ResourceSystem : SystemBase
                     Value = new float3(1)
                 };
 
+                //ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
+                ParticleSystem.InstantiateSpawnFlashParticle(entityIndex, ecb, particlePrefab, position.Value, new float3(1, -10, 1));
 
-                ecb.SetComponent(newBee, newTranslation);
+                ecb.SetComponent(entityIndex, newBee, newTranslation);
                 //ecb.SetComponent(newBee, new Bee { seed = seed });
-                ecb.AddComponent(newBee, newScale);
-                ecb.RemoveComponent(resourceEntity, typeof(SpawnBeeTag));
+                ecb.AddComponent(entityIndex, newBee, newScale);
+                ecb.RemoveComponent<SpawnBeeTag>(entityIndex, resourceEntity);
 
             }
-            ecb.DestroyEntity(resourceEntity); //Should be cached
+            ecb.DestroyEntity(entityIndex, resourceEntity); //Should be cached
         }
     }
 }

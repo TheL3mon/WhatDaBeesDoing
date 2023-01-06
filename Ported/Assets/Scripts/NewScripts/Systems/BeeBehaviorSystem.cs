@@ -11,7 +11,7 @@ public partial class BeeBehaviorSystem : SystemBase
 {
     private static ResourceData _resourceData;
     private Random _random;
-    private Entity particlePrefab;
+    private Entity _particlePrefab;
 
     protected override void OnCreate()
     {
@@ -23,7 +23,7 @@ public partial class BeeBehaviorSystem : SystemBase
         this.Enabled = true;
 
         _random = new Random((uint)UnityEngine.Random.Range(1, 500000));
-        particlePrefab = GetSingleton<ParticleData>().particlePrefab;
+        _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
         _resourceData = ResourceSystem._resourceData;
@@ -52,7 +52,7 @@ public partial class BeeBehaviorSystem : SystemBase
             resourceData = _resourceData,
             resourceStatus = resourceStatus,
             stackHeights = stackHeights,
-            particlePrefab = particlePrefab,
+            particlePrefab = _particlePrefab,
             dt = Time.DeltaTime,
             ecb = ecb.AsParallelWriter(),
             random = _random
