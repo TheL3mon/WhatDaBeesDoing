@@ -1,23 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Drawing;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
-using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.UIElements;
-using UnityEngine.XR;
-using static ResourceSystem;
-using static Unity.Entities.EntityQueryBuilder;
-using static UnityEditor.PlayerSettings;
-using static UnityEngine.ParticleSystem;
-using static UnityEngine.Rendering.DebugUI;
 using Random = Unity.Mathematics.Random;
 
 public partial class ParticleSystem : SystemBase
@@ -58,7 +44,7 @@ public partial class ParticleSystem : SystemBase
 
         var particleBehaviorJob = new ParticleBehaviorJob
         {
-            ecb = ecb2,
+            ecb = ecb2.AsParallelWriter(),
             fieldData = _fieldData,
             deltaTime = timer
         }.Schedule();
@@ -68,7 +54,7 @@ public partial class ParticleSystem : SystemBase
         ecb2.Dispose();
     }
 
-    public static void InstantiateSpawnFlashParticle(EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateSpawnFlashParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -94,10 +80,10 @@ public partial class ParticleSystem : SystemBase
 
         UnityEngine.Color color = UnityEngine.Color.yellow;
 
-        InstantiateParticle(ecb, particle, color, particlePrefab);
+        InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateBloodParticle(EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateBloodParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -123,13 +109,13 @@ public partial class ParticleSystem : SystemBase
 
         UnityEngine.Color color = UnityEngine.Color.red;
 
-        InstantiateParticle(ecb, particle, color, particlePrefab);
+        InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateParticle(EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
+    public static void InstantiateParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
     {
         //Debug.Log("BOFA DEEZ PARTICLE NUTS");
-        var newParticle = ecb.Instantiate(particlePrefab);
+        var newParticle = ecb.Instantiate(entityIndex, particlePrefab);
         //var newParticle = ecb.Instantiate(particlePrefab);
 
         var newTranslation = new Translation
@@ -147,15 +133,15 @@ public partial class ParticleSystem : SystemBase
             color = UnityEngine.Color.white;
 
             ParticleSpawnTag spawnTag = new ParticleSpawnTag();
-            ecb.AddComponent(newParticle, spawnTag);
+            ecb.AddComponent(entityIndex, newParticle, spawnTag);
         }
         else if (particle.type == ParticleType.Blood)
         {
             ParticleBloodTag bloodTag = new ParticleBloodTag();
-            ecb.AddComponent(newParticle, bloodTag);
+            ecb.AddComponent(entityIndex, newParticle, bloodTag);
         }
         ParticleTag particleTag = new ParticleTag();
-        ecb.AddComponent(newParticle, particleTag);
+        ecb.AddComponent(entityIndex, newParticle, particleTag);
 
         particle.color = color;
         var newColor = new ParticleColorComponent
@@ -163,10 +149,10 @@ public partial class ParticleSystem : SystemBase
             Value = color
         };
 
-        ecb.SetComponent(newParticle, particle);
-        ecb.SetComponent(newParticle, newTranslation);
-        ecb.AddComponent(newParticle, newScale);
-        ecb.SetComponent(newParticle, newColor);
+        ecb.SetComponent(entityIndex, newParticle, particle);
+        ecb.SetComponent(entityIndex, newParticle, newTranslation);
+        ecb.AddComponent(entityIndex, newParticle, newScale);
+        ecb.SetComponent(entityIndex, newParticle, newColor);
     }
 
     public void SpawnParticles(EntityCommandBuffer _ecb, float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
@@ -216,143 +202,144 @@ public partial class ParticleSystem : SystemBase
         _ecb.Playback(EntityManager);
         _ecb.Dispose();
     }
+}
 
-    [BurstCompile]
-    public partial struct ParticleSpawnJob : IJobEntity
+[BurstCompile]
+public partial struct ParticleSpawnJob : IJobEntity
+{
+    public EntityCommandBuffer ecb;
+    public Entity particle;
+    public Particle particleValues;
+    public UnityEngine.Color color;
+    public int count;
+
+    void Execute(in ParticleData particleData)
     {
-        public EntityCommandBuffer ecb;
-        public Entity particle;
-        public Particle particleValues;
-        public UnityEngine.Color color;
-        public int count;
-
-        void Execute(in ParticleData particleData)
+        for (int i = 0; i < count; i++)
         {
-            for (int i = 0; i < count; i++)
+            //Debug.Log("BOFA DEEZ PARTICLE NUTS");
+            var newParticle = ecb.Instantiate(particle);
+
+            var newTranslation = new Translation
             {
-                //Debug.Log("BOFA DEEZ PARTICLE NUTS");
-                var newParticle = ecb.Instantiate(particle);
+                Value = particleValues.position
+            };
 
-                var newTranslation = new Translation
-                {
-                    Value = particleValues.position
-                };
+            var newScale = new NonUniformScale
+            {
+                Value = particleValues.size
+            };
 
-                var newScale = new NonUniformScale
-                {
-                    Value = particleValues.size
-                };
+            if (particleValues.type == ParticleType.SpawnFlash)
+            {
+                color = UnityEngine.Color.white;
 
-                if (particleValues.type == ParticleType.SpawnFlash)
-                {
-                    color = UnityEngine.Color.white;
-
-                    ParticleSpawnTag spawnTag = new ParticleSpawnTag();
-                    ecb.AddComponent(newParticle, spawnTag);
-                }
-                else if (particleValues.type == ParticleType.Blood)
-                {
-                    ParticleBloodTag bloodTag = new ParticleBloodTag();
-                    ecb.AddComponent(newParticle, bloodTag);
-                }
-                ParticleTag particleTag = new ParticleTag();
-                ecb.AddComponent(newParticle, particleTag);
-
-                particleValues.color = color;
-                var newColor = new ParticleColorComponent
-                {
-                    Value = color
-                };
-
-                ecb.SetComponent(newParticle, particleValues);
-                ecb.SetComponent(newParticle, newTranslation);
-                ecb.AddComponent(newParticle, newScale);
-                ecb.SetComponent(newParticle, newColor);
+                ParticleSpawnTag spawnTag = new ParticleSpawnTag();
+                ecb.AddComponent(newParticle, spawnTag);
             }
+            else if (particleValues.type == ParticleType.Blood)
+            {
+                ParticleBloodTag bloodTag = new ParticleBloodTag();
+                ecb.AddComponent(newParticle, bloodTag);
+            }
+            ParticleTag particleTag = new ParticleTag();
+            ecb.AddComponent(newParticle, particleTag);
+
+            particleValues.color = color;
+            var newColor = new ParticleColorComponent
+            {
+                Value = color
+            };
+
+            ecb.SetComponent(newParticle, particleValues);
+            ecb.SetComponent(newParticle, newTranslation);
+            ecb.AddComponent(newParticle, newScale);
+            ecb.SetComponent(newParticle, newColor);
         }
     }
+}
 
-    public partial struct ParticleBehaviorJob : IJobEntity
+[BurstCompile]
+public partial struct ParticleBehaviorJob : IJobEntity
+{
+    public EntityCommandBuffer.ParallelWriter ecb;
+    [ReadOnly] public FieldData fieldData;
+    public float deltaTime;
+
+    void Execute(Entity particleEntity, [EntityInQueryIndex] int entityIndex, ref Particle particle, in ParticleTag particleTag)
     {
-        public EntityCommandBuffer ecb;
-        public FieldData fieldData;
-        public float deltaTime;
-
-        void Execute(Entity particleEntity, ref Particle particle, in ParticleTag particleTag)
+        if (!particle.stuck)
         {
-            if (!particle.stuck)
+            particle.velocity += new float3(0, -1, 0) * (fieldData.gravity * deltaTime);
+            particle.position += particle.velocity * deltaTime;
+
+            if (System.Math.Abs(particle.position.x) > fieldData.size.x * .5f)
             {
-                particle.velocity += new float3(0, -1, 0) * (fieldData.gravity * deltaTime);
-                particle.position += particle.velocity * deltaTime;
-
-                if (System.Math.Abs(particle.position.x) > fieldData.size.x * .5f)
-                {
-                    particle.position.x = fieldData.size.x * .5f * Mathf.Sign(particle.position.x);
-                    float splat = Mathf.Abs(particle.velocity.x * .3f) + 1f;
-                    particle.size.y *= splat;
-                    particle.size.z *= splat;
-                    particle.stuck = true;
-                }
-                if (System.Math.Abs(particle.position.y) > fieldData.size.y * .5f)
-                {
-                    particle.position.y = fieldData.size.y * .5f * Mathf.Sign(particle.position.y);
-                    float splat = Mathf.Abs(particle.velocity.y * .3f) + 1f;
-                    particle.size.z *= splat;
-                    particle.size.x *= splat;
-                    particle.stuck = true;
-                }
-                if (System.Math.Abs(particle.position.z) > fieldData.size.z * .5f)
-                {
-                    particle.position.z = fieldData.size.z * .5f * Mathf.Sign(particle.position.z);
-                    float splat = Mathf.Abs(particle.velocity.z * .3f) + 1f;
-                    particle.size.x *= splat;
-                    particle.size.y *= splat;
-                    particle.stuck = true;
-                }
-
-
-                Quaternion rotation = Quaternion.identity;
-                float3 scale = particle.size * particle.life;
-                float magnitude = 0;
-                float pvX = particle.velocity.x;
-                float pvY = particle.velocity.y;
-                float pvZ = particle.velocity.z;
-                float speedStretch = 0.25f; // this was set by default in the original
-                if (particle.type == ParticleType.Blood)
-                {
-                    rotation = Quaternion.LookRotation(particle.velocity);
-                    // magnitude = sqrt(x*x+y*y+z*z)
-                    magnitude = (pvX * pvX + pvY * pvY + pvZ * pvZ);
-                    scale.z *= 1f + magnitude * speedStretch;
-                }
+                particle.position.x = fieldData.size.x * .5f * Mathf.Sign(particle.position.x);
+                float splat = Mathf.Abs(particle.velocity.x * .3f) + 1f;
+                particle.size.y *= splat;
+                particle.size.z *= splat;
+                particle.stuck = true;
+            }
+            if (System.Math.Abs(particle.position.y) > fieldData.size.y * .5f)
+            {
+                particle.position.y = fieldData.size.y * .5f * Mathf.Sign(particle.position.y);
+                float splat = Mathf.Abs(particle.velocity.y * .3f) + 1f;
+                particle.size.z *= splat;
+                particle.size.x *= splat;
+                particle.stuck = true;
+            }
+            if (System.Math.Abs(particle.position.z) > fieldData.size.z * .5f)
+            {
+                particle.position.z = fieldData.size.z * .5f * Mathf.Sign(particle.position.z);
+                float splat = Mathf.Abs(particle.velocity.z * .3f) + 1f;
+                particle.size.x *= splat;
+                particle.size.y *= splat;
+                particle.stuck = true;
             }
 
-            ecb.SetComponent(particleEntity, new Translation
-            {
-                Value = particle.position
-            });
 
-            ecb.SetComponent(particleEntity, new NonUniformScale
+            Quaternion rotation = Quaternion.identity;
+            float3 scale = particle.size * particle.life;
+            float magnitude = 0;
+            float pvX = particle.velocity.x;
+            float pvY = particle.velocity.y;
+            float pvZ = particle.velocity.z;
+            float speedStretch = 0.25f; // this was set by default in the original
+            if (particle.type == ParticleType.Blood)
             {
-                Value = particle.size
-            });
-
-            //if (particle.stuck)
-            //{
-            particle.life -= deltaTime / particle.lifeDuration;
-            particle.color.a = particle.life;
-            ecb.SetComponent(particleEntity, new ParticleColorComponent
-            {
-                Value = particle.color
-            });
-            //}
-
-            ecb.SetComponent(particleEntity, particle);
-
-            if (particle.life < 0f)
-            {
-                ecb.DestroyEntity(particleEntity);
+                rotation = Quaternion.LookRotation(particle.velocity);
+                // magnitude = sqrt(x*x+y*y+z*z)
+                magnitude = (pvX * pvX + pvY * pvY + pvZ * pvZ);
+                scale.z *= 1f + magnitude * speedStretch;
             }
+        }
+
+        ecb.SetComponent(entityIndex, particleEntity, new Translation
+        {
+            Value = particle.position
+        });
+
+        ecb.SetComponent(entityIndex, particleEntity, new NonUniformScale
+        {
+            Value = particle.size
+        });
+
+        //if (particle.stuck)
+        //{
+        particle.life -= deltaTime / particle.lifeDuration;
+        particle.color.a = particle.life;
+        ecb.SetComponent(entityIndex, particleEntity, new ParticleColorComponent
+        {
+            Value = particle.color
+        });
+        //}
+
+        ecb.SetComponent(entityIndex, particleEntity, particle);
+
+        if (particle.life < 0f)
+        {
+            ecb.DestroyEntity(entityIndex, particleEntity);
         }
     }
 }

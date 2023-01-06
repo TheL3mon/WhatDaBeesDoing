@@ -69,7 +69,7 @@ public partial class BeeMovementSystem : SystemBase
     }
 }
 
-//[BurstCompile]
+[BurstCompile]
 public partial struct MoveBeeJob : IJobEntity
 {
     public EntityCommandBuffer.ParallelWriter ecb;
@@ -232,7 +232,7 @@ public partial struct MoveBeeJob : IJobEntity
 
         nus.Value = bee.beeScale;
 
-        if (float.IsNaN(oldPos.x) || float.IsNaN(beePos.Value.x))
-            Debug.Log(e.Index + " beePos before: " + oldPos + ", after: " + beePos.Value);
+        //if (float.IsNaN(oldPos.x) || float.IsNaN(beePos.Value.x))
+        //    Debug.Log(e.Index + " beePos before: " + oldPos + ", after: " + beePos.Value);
     }
 }

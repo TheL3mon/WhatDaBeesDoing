@@ -64,7 +64,7 @@ public partial class BeeDeathSystem : SystemBase
             resourceStatuses = resourceStatus,
             beeStatuses = beeStatus,
             ecb = ecb.AsParallelWriter()
-        }.Schedule(clearReferencesJob);
+        }.ScheduleParallel(clearReferencesJob);
 
         clearReferencesResourceJob.Complete();
 
@@ -133,6 +133,8 @@ public partial struct DeadBeeJob : IJobEntity
 
             bee.resourceTarget = Entity.Null;
             bee.enemyTarget = Entity.Null;
+            ecb.RemoveComponent<YellowTeamTag>(entityIndex, e);
+            ecb.RemoveComponent<BlueTeamTag>(entityIndex, e);
         }
 
         if (bee.dead)
@@ -215,13 +217,7 @@ public partial struct DeleteDeadBee : IJobEntity
 
     void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in DeleteTag tag)
     {
-
-        if (bee.deathTimer <= 0)
-        {
-            //Debug.Log("Bee should be deleted");
-            //ecb.DestroyEntity(e);
-            ecb.DestroyEntity(entityIndex, e);
-        }
+        ecb.DestroyEntity(entityIndex, e);
     }
 
 }

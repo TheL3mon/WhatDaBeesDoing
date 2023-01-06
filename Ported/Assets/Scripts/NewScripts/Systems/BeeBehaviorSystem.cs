@@ -53,11 +53,10 @@ public partial class BeeBehaviorSystem : SystemBase
             resourceStatus = resourceStatus,
             stackHeights = stackHeights,
             particlePrefab = particlePrefab,
-            entityManager = EntityManager,
             dt = Time.DeltaTime,
-            ecb = ecb,
+            ecb = ecb.AsParallelWriter(),
             random = _random
-        }.Schedule();
+        }.ScheduleParallel();
 
         targetingJob.Complete();
 
@@ -76,23 +75,6 @@ public partial class BeeBehaviorSystem : SystemBase
         }.Schedule(targetingJob);
 
         collectingJob.Complete();
-
-        //ecb.Playback(World.EntityManager);
-
-        //ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-
-        //blueTeamQuery = GetEntityQuery(ComponentType.ReadOnly<BlueTeamTag>());
-        //blueArr = blueTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
-
-        //yellowTeamQuery = GetEntityQuery(ComponentType.ReadOnly<YellowTeamTag>());
-        //yellowArr = yellowTeamQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
-
-        //resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
-        //resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
-
-        //positions = GetComponentDataFromEntity<Translation>(true);
-        //resourceStatus = GetComponentDataFromEntity<Resource>(true);
-
 
         ecb.Playback(World.EntityManager);
 
@@ -272,7 +254,7 @@ public partial struct CollectResourceJob : IJobEntity
     }
 }
 
-//[BurstCompile]
+[BurstCompile]
 public partial struct TargetingJob : IJobEntity
 {
     [ReadOnly] public NativeArray<Entity> blueTeam;
@@ -282,11 +264,10 @@ public partial struct TargetingJob : IJobEntity
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
     [ReadOnly] public ResourceData resourceData;
     [ReadOnly] public NativeList<int> stackHeights;
-    public EntityManager entityManager;
     public Entity particlePrefab;
     public float dt;
-    public EntityCommandBuffer ecb;
-    //public EntityCommandBuffer.ParallelWriter ecb;
+    //public EntityCommandBuffer ecb;
+    public EntityCommandBuffer.ParallelWriter ecb;
 
     public Unity.Mathematics.Random random;
 
@@ -332,7 +313,7 @@ public partial struct TargetingJob : IJobEntity
                     if (status.height == stackHeights[index])
                     {
                         bee.resourceTarget = resource;
-                        ecb.AddComponent(e, new CollectingTag());
+                        ecb.AddComponent(entityIndex, e, new CollectingTag());
                     }
                     else
                     {
@@ -381,15 +362,17 @@ public partial struct TargetingJob : IJobEntity
 
                     //ParticleSystem.InstantiateBloodParticle(ecb, particlePrefab,positions[e].Value, new float3(1, -10, 1));
 
-                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
-                    ecb.AddComponent(bee.enemyTarget, new DeadTag());
+                    ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
+
+                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
+                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
                     bee.enemyTarget = Entity.Null;
                 }
             }
         }
         else if (bee.resourceTarget != Entity.Null)
         {
-            ecb.AddComponent(e, new CollectingTag());
+            ecb.AddComponent(entityIndex, e, new CollectingTag());
         }
     }
 
