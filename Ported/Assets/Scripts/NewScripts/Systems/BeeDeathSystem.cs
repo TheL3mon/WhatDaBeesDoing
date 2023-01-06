@@ -28,7 +28,7 @@ public partial class BeeDeathSystem : SystemBase
     protected override void OnUpdate()
     {
 
-        var deltaTime = Time.DeltaTime;
+        var deltaTime = UnityEngine.Time.deltaTime;
 
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 

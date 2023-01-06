@@ -91,7 +91,7 @@ public partial class ResourceSystem : SystemBase
 
         var spawnBeeFromResourceJob = new SpawnBeeFromResourceJob
         {
-            ecb = ecb.AsParallelWriter(),
+            ecb = ecb,
             rd = _resourceData,
             blueBee = _blueTeamPrefab,
             yellowBee = _yellowTeamPrefab,
@@ -203,7 +203,7 @@ public partial class ResourceSystem : SystemBase
     [BurstCompile]
     public partial struct SpawnBeeFromResourceJob : IJobEntity
     {
-        public EntityCommandBuffer.ParallelWriter ecb;
+        public EntityCommandBuffer ecb;
         [ReadOnly] public ResourceData rd;
         [ReadOnly] public Entity blueBee;
         [ReadOnly] public Entity yellowBee;
@@ -217,9 +217,9 @@ public partial class ResourceSystem : SystemBase
                 Entity newBee;
 
                 if (sbt.team == 0)
-                    newBee = ecb.Instantiate(entityIndex, yellowBee);
+                    newBee = ecb.Instantiate(yellowBee);
                 else
-                    newBee = ecb.Instantiate(entityIndex, blueBee);
+                    newBee = ecb.Instantiate(blueBee);
 
                 var newTranslation = new Translation
                 {
@@ -234,13 +234,13 @@ public partial class ResourceSystem : SystemBase
                 //ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
                 ParticleSystem.InstantiateSpawnFlashParticle(entityIndex, ecb, particlePrefab, position.Value, new float3(1, -10, 1));
 
-                ecb.SetComponent(entityIndex, newBee, newTranslation);
+                ecb.SetComponent(newBee, newTranslation);
                 //ecb.SetComponent(newBee, new Bee { seed = seed });
-                ecb.AddComponent(entityIndex, newBee, newScale);
-                ecb.RemoveComponent<SpawnBeeTag>(entityIndex, resourceEntity);
+                ecb.AddComponent(newBee, newScale);
+                ecb.RemoveComponent<SpawnBeeTag>(resourceEntity);
 
             }
-            ecb.DestroyEntity(entityIndex, resourceEntity); //Should be cached
+            ecb.DestroyEntity(resourceEntity); //Should be cached
         }
     }
 }

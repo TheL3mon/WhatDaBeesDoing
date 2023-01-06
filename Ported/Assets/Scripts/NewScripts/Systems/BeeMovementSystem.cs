@@ -46,13 +46,15 @@ public partial class BeeMovementSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(true);
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
+        var deltaTime = UnityEngine.Time.deltaTime;
+
         var movementJob = new MoveBeeJob
         {
             ecb = ecb.AsParallelWriter(),
             blueTeam = blueArr, 
             yellowTeam = yellowArr,
             positions = positions,
-            dt = Time.DeltaTime,
+            dt = deltaTime,
             random = _random,
             field = _fieldData
         }.ScheduleParallel();
@@ -115,7 +117,7 @@ public partial struct MoveBeeJob : IJobEntity
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         dir /= len;
         dir -= 0.5f;
-        dir *= random.NextFloat(0, 1);
+        dir *= random.NextFloat(0, 2);
 
         bee.velocity += dir * (beeData.flightJitter * dt);
         bee.velocity *= (1f - beeData.damping);
@@ -142,7 +144,7 @@ public partial struct MoveBeeJob : IJobEntity
             bee.velocity += deltaAttract * (beeData.teamAttraction * dt / distAttract);
         }
 
-        var delta = randomRepellerPos.Value - position.Value;
+        var delta = randomAttractorPos.Value - position.Value;
         var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
         if (dist > 0f)
         {

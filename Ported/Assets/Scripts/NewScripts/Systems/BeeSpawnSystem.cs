@@ -22,6 +22,8 @@ public partial class BeeSpawnSystem : SystemBase
     bool buttonpressed = false;
     float timer;
     const int resourceSpawnPerFrame = 100;
+    public float spawnEnemyBeeTimer = 1.0f;
+    public float spawnEnemyBeeCounter = 0.0f;
 
     protected override void OnCreate()
     {
@@ -57,22 +59,22 @@ public partial class BeeSpawnSystem : SystemBase
             blueSpawn.Complete();
         }
 
-        pos = new float3(-1, 0, 0) * (-_fieldData.size.x * .4f + _fieldData.size.x * .8f * 1);
-        color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
+        //pos = new float3(-1, 0, 0) * (-_fieldData.size.x * .4f + _fieldData.size.x * .8f * 1);
+        //color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
 
-        for (int i = 0; i < beeSpawnData.initialSpawnPerTeam; i++)
-        {
-            //var nextRandom = _random.NextFloat3(minPos, maxPos);
-            var yellowSpawn = new SpawnJob
-            {
-                ecb = _ecb,
-                team = 1,
-                bee = _yellowTeamPrefab,
-                color = color,
-                position = pos,
-            }.Schedule();
-            yellowSpawn.Complete();
-        }
+        //for (int i = 0; i < beeSpawnData.initialSpawnPerTeam; i++)
+        //{
+        //    //var nextRandom = _random.NextFloat3(minPos, maxPos);
+        //    var yellowSpawn = new SpawnJob
+        //    {
+        //        ecb = _ecb,
+        //        team = 1,
+        //        bee = _yellowTeamPrefab,
+        //        color = color,
+        //        position = pos,
+        //    }.Schedule();
+        //    yellowSpawn.Complete();
+        //}
 
 
         for (int i = 0; i < _resourceData.startResourceCount; i++)
@@ -97,6 +99,34 @@ public partial class BeeSpawnSystem : SystemBase
     {
         timer += Time.DeltaTime;
 
+
+        spawnEnemyBeeCounter += UnityEngine.Time.deltaTime;
+
+        if (spawnEnemyBeeCounter > spawnEnemyBeeTimer)
+        {
+            var pos = new float3(-1, 0, 0) * (-_fieldData.size.x * .4f + _fieldData.size.x * .8f * 1);
+            var color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
+
+            _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
+            while (spawnEnemyBeeCounter > spawnEnemyBeeTimer)
+            {
+                var yellowSpawn = new SpawnJob
+                {
+                    ecb = _ecb,
+                    team = 1,
+                    bee = _yellowTeamPrefab,
+                    color = color,
+                    position = pos,
+                }.Schedule();
+                yellowSpawn.Complete();
+
+                spawnEnemyBeeCounter -= spawnEnemyBeeTimer;
+            }
+            _ecb.Playback(EntityManager);
+            _ecb.Dispose();
+
+            spawnEnemyBeeCounter = 0.0f;
+        }
 
         if (Input.GetKeyDown(KeyCode.A))
         {

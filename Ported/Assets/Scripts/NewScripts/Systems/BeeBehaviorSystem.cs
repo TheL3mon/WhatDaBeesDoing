@@ -1,3 +1,5 @@
+using JetBrains.Annotations;
+using TreeEditor;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -21,9 +23,10 @@ public partial class BeeBehaviorSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        var dt = Time.DeltaTime;
+        var dt = UnityEngine.Time.deltaTime;
         _random = new Random((uint)UnityEngine.Random.Range(1, 500000));
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
+        var fieldData = GetSingleton<FieldData>();
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
         _resourceData = ResourceSystem._resourceData;
@@ -54,27 +57,11 @@ public partial class BeeBehaviorSystem : SystemBase
             stackHeights = stackHeights,
             particlePrefab = _particlePrefab,
             dt = dt,
-            ecb = ecb.AsParallelWriter(),
-            random = _random
-        }.ScheduleParallel();
-
-        Dependency = targetingJob;
-
-        var collectingJob = new CollectResourceJob
-        {
-            blueTeam = blueArr,
-            yellowTeam = yellowArr,
-            resources = resourceArr,
-            resourceStatus = resourceStatus,
-            positions = positions,
-            stackHeights = stackHeights,
-            resourceData = _resourceData,
-            dt = dt,
             ecb = ecb,
             random = _random
-        }.Schedule(Dependency);
+        }.Schedule();
 
-        Dependency = collectingJob;
+        Dependency = targetingJob;
 
         Dependency.Complete();
 
@@ -87,181 +74,6 @@ public partial class BeeBehaviorSystem : SystemBase
     }
 }
 
-
-[BurstCompile]
-public partial struct CollectResourceJob : IJobEntity
-{
-
-    [ReadOnly] public NativeArray<Entity> resources;
-    [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
-    [ReadOnly] public ComponentDataFromEntity<Translation> positions;
-    [ReadOnly] public ResourceData resourceData;
-    [ReadOnly] public NativeArray<Entity> blueTeam;
-    [ReadOnly] public NativeArray<Entity> yellowTeam;
-    public NativeList<int> stackHeights;
-    public float dt;
-
-    public EntityCommandBuffer ecb;
-
-    public FieldData fd;
-
-    public Random random;
-
-    void Execute(Entity e, ref Bee bee, in CollectingTag tag, in BeeData beeData)
-    {
-        if (resources.Length == 0)
-        {
-            ecb.RemoveComponent<CollectingTag>(e);
-            bee.resourceTarget = Entity.Null;
-            return;
-        }
-
-        if (bee.resourceTarget == Entity.Null)
-        {
-            ecb.RemoveComponent<CollectingTag>(e);
-            return;
-        }
-
-        //var index = resources.IndexOf(target);
-
-        //if (index == -1)
-        //{
-        //    ecb.RemoveComponent<CollectingTag>(e);
-        //    bee.resourceTarget = Entity.Null;
-        //    return;
-        //}
-
-        //var resource = resources[index];
-        var status = resourceStatus[bee.resourceTarget];
-        //bee.resourceTarget = resource;
-
-        int beeTeam = bee.team;
-        int resourceHolderTeam = status.holderTeam;
-
-
-        if (status.holder == Entity.Null)
-        {
-            if (status.dead == true)
-            {
-                //Debug.Log("resource is dead");
-                bee.resourceTarget = Entity.Null;
-                return;
-            }
-            int resourceIndex = status.gridX + status.gridY * resourceData.gridCounts.x;
-
-            var stackHeight = stackHeights[resourceIndex];
-            var resourceHeight = status.height;
-
-            if (stackHeight != resourceHeight)
-            {
-                {
-                    ecb.RemoveComponent<CollectingTag>(e);
-                    bee.resourceTarget = Entity.Null;
-                    return;
-                }
-            }
-            else
-            {
-                var resourcePos = positions[bee.resourceTarget].Value;
-
-                if (float.IsNaN(resourcePos.x) || float.IsNaN(resourcePos.y) || float.IsNaN(resourcePos.z))
-                {
-                    bee.resourceTarget = Entity.Null;
-                    return;
-                }
-
-                if (float.IsNaN(positions[e].Value.x) || float.IsNaN(positions[e].Value.y) || float.IsNaN(positions[e].Value.z))
-                {
-                    return;
-                }
-
-                var delta = positions[bee.resourceTarget].Value - positions[e].Value;
-                float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
-                if (sqrDist > beeData.grabDistance * beeData.grabDistance)
-                {
-                    //Debug.Log("Moving towards resource");
-                    bee.velocity += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
-                }
-                else
-                {
-                    //Set component
-                    var r = new Resource();
-                    r.position = status.position;
-                    r.height = status.height;
-                    r.holder = e;
-                    r.holderTeam = bee.team;
-
-                    ecb.SetComponent(bee.resourceTarget, r);
-
-                    //reduce stack of resource
-                    stackHeights[resourceIndex] -= 1;
-                }
-            }
-        }
-        else
-        {
-            if (status.holder == e)
-            {
-                float3 targetPos;
-
-
-
-                //Vector3 targetPos = new Vector3(-Field.size.x * .45f + Field.size.x * .9f * bee.team, 0f, bee.position.z);
-
-
-                if (bee.team == 0)
-                {
-                    targetPos = new float3(50, 0, 0);
-                }
-                else
-                {
-
-                    //targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * side, 0f, positions[e].Value.z);
-                    targetPos = new float3(-50, random.NextFloat(0, fd.size.y), random.NextFloat(0, fd.size.z));
-                }
-
-
-
-
-                //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
-                var delta = targetPos - positions[e].Value;
-                var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
-                bee.velocity += (targetPos - positions[e].Value) * (beeData.carryForce * dt / dist);
-
-                if (Mathf.Abs(delta.x) < 10.0f)
-                {
-                    var r = new Resource();
-                    r.position = positions[e].Value;
-                    r.height = status.height;
-                    r.holder = Entity.Null;
-                    r.holderTeam = -1;
-
-                    var fallingResourceTag = new FallingResourceTag();
-                    ecb.SetComponent(bee.resourceTarget, r);
-                    ecb.AddComponent(bee.resourceTarget, fallingResourceTag);
-                }
-                else
-                {
-                    var r = new Resource();
-                    r.position = positions[e].Value;
-                    r.height = status.height;
-                    r.holder = e;
-                    r.holderTeam = -1;
-
-                    ecb.SetComponent(bee.resourceTarget, r);
-
-                    ecb.SetComponent(bee.resourceTarget, new Translation
-                    {
-                        Value = r.position
-                    });
-                }
-            }
-            else if (resourceHolderTeam != -1 && beeTeam != resourceHolderTeam) bee.enemyTarget = status.holder;
-            else if (beeTeam == resourceHolderTeam) bee.resourceTarget = Entity.Null;
-        }
-    }
-}
-
 [BurstCompile]
 public partial struct TargetingJob : IJobEntity
 {
@@ -271,18 +83,22 @@ public partial struct TargetingJob : IJobEntity
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
     [ReadOnly] public ResourceData resourceData;
-    [ReadOnly] public NativeList<int> stackHeights;
+    public NativeList<int> stackHeights;
+    [ReadOnly] public FieldData fd;
     public Entity particlePrefab;
     public float dt;
     //public EntityCommandBuffer ecb;
-    public EntityCommandBuffer.ParallelWriter ecb;
+    public EntityCommandBuffer ecb;
 
     public Unity.Mathematics.Random random;
 
     void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in Translation position, in BeeData beeData, in AliveTag alive)
     {
+
         bee.isAttacking = false;
         bee.isHoldingResource = false;
+
+
 
         //if (!entityManager.Exists(bee.resourceTarget))
         //    bee.resourceTarget = Entity.Null;
@@ -323,7 +139,8 @@ public partial struct TargetingJob : IJobEntity
                     if (status.height == stackHeights[index])
                     {
                         bee.resourceTarget = resource;
-                        ecb.AddComponent(entityIndex, e, new CollectingTag());
+                        bee.collectingResource = true;
+                        //CollectResource(e, entityIndex, bee, beeData);
                     }
                     else
                     {
@@ -374,22 +191,161 @@ public partial struct TargetingJob : IJobEntity
 
                     ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
 
-                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget.Index, bee.enemyTarget);
-                    ecb.AddComponent(bee.enemyTarget.Index, bee.enemyTarget, new DeadTag());
+
+                    ecb.RemoveComponent<AliveTag>(bee.enemyTarget);
+                    ecb.AddComponent(bee.enemyTarget, new DeadTag());
                     bee.enemyTarget = Entity.Null;
                 }
             }
         }
         else if (bee.resourceTarget != Entity.Null)
         {
-            ecb.AddComponent(entityIndex, e, new CollectingTag());
+            //CollectResource(e, entityIndex, bee, beeData);
+            bee.collectingResource = true;
+        }
+
+        if (bee.collectingResource)
+        {
+            CollectResource(e, ref bee, in beeData);
         }
     }
 
 
-    void CollectResource()
+    void CollectResource(Entity e, ref Bee bee, in BeeData beeData)
     {
+        if (resources.Length == 0)
+        {
+            bee.collectingResource = false;
+            bee.resourceTarget = Entity.Null;
+            return;
+        }
 
+        if (bee.resourceTarget == Entity.Null)
+        {
+            bee.collectingResource = false;
+            return;
+        }
+;
+        var status = resourceStatus[bee.resourceTarget];
+
+        int beeTeam = bee.team;
+        int resourceHolderTeam = status.holderTeam;
+
+
+        if (status.holder == Entity.Null)
+        {
+            if (status.dead == true)
+            {
+                //Debug.Log("resource is dead");
+                bee.resourceTarget = Entity.Null;
+                return;
+            }
+            int resourceIndex = status.gridX + status.gridY * resourceData.gridCounts.x;
+
+            var stackHeight = stackHeights[resourceIndex];
+            var resourceHeight = status.height;
+
+            if (stackHeight != resourceHeight)
+            {
+                {
+                    //ecb.RemoveComponent<CollectingTag>(entityIndex, e);
+                    bee.collectingResource = false;
+                    bee.resourceTarget = Entity.Null;
+                    return;
+                }
+            }
+            else
+            {
+                var resourcePos = positions[bee.resourceTarget].Value;
+
+                if (float.IsNaN(resourcePos.x) || float.IsNaN(resourcePos.y) || float.IsNaN(resourcePos.z))
+                {
+                    bee.resourceTarget = Entity.Null;
+                    return;
+                }
+
+                if (float.IsNaN(positions[e].Value.x) || float.IsNaN(positions[e].Value.y) || float.IsNaN(positions[e].Value.z))
+                {
+                    return;
+                }
+
+                var delta = positions[bee.resourceTarget].Value - positions[e].Value;
+                float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+                if (sqrDist > beeData.grabDistance * beeData.grabDistance)
+                {
+                    //Debug.Log("Moving towards resource");
+                    bee.velocity += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
+                }
+                else
+                {
+                    //Set component
+                    var r = new Resource();
+                    r.position = status.position;
+                    r.height = -1;
+                    r.holder = e;
+                    r.holderTeam = bee.team;
+
+                    ecb.SetComponent(bee.resourceTarget, r);
+
+                    //reduce stack of resource
+                    stackHeights[resourceIndex] -= 1;
+                }
+            }
+        }
+        else
+        {
+            if (status.holder == e)
+            {
+                float3 targetPos;
+
+
+                if (bee.team == 0)
+                {
+                    targetPos = new float3(50, 0, 0);
+                }
+                else
+                {
+
+                    //targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * side, 0f, positions[e].Value.z);
+                    targetPos = new float3(-50, random.NextFloat(0, fd.size.y), random.NextFloat(0, fd.size.z));
+                }
+
+                //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
+                var delta = targetPos - positions[e].Value;
+                var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+                bee.velocity += (targetPos - positions[e].Value) * (beeData.carryForce * dt / dist);
+
+                if (Mathf.Abs(delta.x) < 10.0f)
+                {
+                    var r = new Resource();
+                    r.position = positions[e].Value;
+                    r.height = -1;
+                    r.holder = Entity.Null;
+                    r.holderTeam = -1;
+
+                    var fallingResourceTag = new FallingResourceTag();
+                    ecb.SetComponent(bee.resourceTarget, r);
+                    ecb.AddComponent(bee.resourceTarget, fallingResourceTag);
+                }
+                else
+                {
+                    var r = new Resource();
+                    r.position = positions[e].Value;
+                    r.height = -1;
+                    r.holder = e;
+                    r.holderTeam = -1;
+
+                    ecb.SetComponent(bee.resourceTarget, r);
+
+                    ecb.SetComponent(bee.resourceTarget, new Translation
+                    {
+                        Value = r.position
+                    });
+                }
+            }
+            else if (resourceHolderTeam != -1 && beeTeam != resourceHolderTeam) bee.enemyTarget = status.holder;
+            else if (beeTeam == resourceHolderTeam) bee.resourceTarget = Entity.Null;
+        }
     }
 
 }

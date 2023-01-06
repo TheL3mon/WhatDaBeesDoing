@@ -27,8 +27,10 @@ public class BeeManager : MonoBehaviour {
 	public float maxSpawnSpeed;
 	[Space(10)]
 	public int startBeeCount;
+	public float spawnEnemyBeeTimer = 1.0f;
+    public float spawnEnemyBeeCounter = 0.0f;
 
-	List<Bee> bees;
+    List<Bee> bees;
 	List<Bee>[] teamsOfBees;
 	List<Bee> pooledBees;
 
@@ -100,16 +102,24 @@ public class BeeManager : MonoBehaviour {
 		for (int i=0;i<2;i++) {
 			teamsOfBees[i] = new List<Bee>(25000);
 		}
-		for (int i=0;i<startBeeCount;i++) {
-			int team = i%2;
-			SpawnBee(team);
-		}
+		//for (int i=0;i<startBeeCount;i++) {
+		//	int team = i%2;
+		//	SpawnBee(team);
+		//}
 
-		matProps = new MaterialPropertyBlock();
+        for (int i = 0; i < startBeeCount; i++)
+        {
+            int team = 0;
+            SpawnBee(team);
+        }
+
+        matProps = new MaterialPropertyBlock();
 		matProps.SetVectorArray("_Color",new Vector4[beesPerBatch]);
 	}
 
 	void FixedUpdate() {
+		Debug.Log("Bee count: " + bees.Count + " blue bees: " + teamsOfBees[0].Count + " yellow bees: " + teamsOfBees[1].Count);
+
 		float deltaTime = Time.fixedDeltaTime;
 
 		for (int i = 0; i < bees.Count; i++) {
@@ -244,6 +254,18 @@ public class BeeManager : MonoBehaviour {
 		}
 	}
 	private void Update() {
+        spawnEnemyBeeCounter += Time.deltaTime;
+
+		if(spawnEnemyBeeCounter > spawnEnemyBeeTimer)
+		{
+			while (spawnEnemyBeeCounter > spawnEnemyBeeTimer)
+			{
+				SpawnBee(1);
+				spawnEnemyBeeCounter -= spawnEnemyBeeTimer;
+			}
+			spawnEnemyBeeCounter = 0.0f;
+		}
+
 		for (int i=0;i<bees.Count;i++) {
 			float size = bees[i].size;
 			Vector3 scale = new Vector3(size,size,size);

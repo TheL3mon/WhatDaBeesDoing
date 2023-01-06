@@ -56,7 +56,7 @@ public partial class ParticleSystem : SystemBase
         ecb2.Dispose();
     }
 
-    public static void InstantiateSpawnFlashParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateSpawnFlashParticle(int entityIndex, EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -85,7 +85,7 @@ public partial class ParticleSystem : SystemBase
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateBloodParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateBloodParticle(int entityIndex, EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -114,10 +114,10 @@ public partial class ParticleSystem : SystemBase
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
+    public static void InstantiateParticle(int entityIndex, EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
     {
         //Debug.Log("BOFA DEEZ PARTICLE NUTS");
-        var newParticle = ecb.Instantiate(entityIndex, particlePrefab);
+        var newParticle = ecb.Instantiate(particlePrefab);
         //var newParticle = ecb.Instantiate(particlePrefab);
 
         var newTranslation = new Translation
@@ -135,15 +135,15 @@ public partial class ParticleSystem : SystemBase
             color = UnityEngine.Color.white;
 
             ParticleSpawnTag spawnTag = new ParticleSpawnTag();
-            ecb.AddComponent(entityIndex, newParticle, spawnTag);
+            ecb.AddComponent(newParticle, spawnTag);
         }
         else if (particle.type == ParticleType.Blood)
         {
             ParticleBloodTag bloodTag = new ParticleBloodTag();
-            ecb.AddComponent(entityIndex, newParticle, bloodTag);
+            ecb.AddComponent(newParticle, bloodTag);
         }
         ParticleTag particleTag = new ParticleTag();
-        ecb.AddComponent(entityIndex, newParticle, particleTag);
+        ecb.AddComponent(newParticle, particleTag);
 
         particle.color = color;
         var newColor = new ParticleColorComponent
@@ -151,10 +151,10 @@ public partial class ParticleSystem : SystemBase
             Value = color
         };
 
-        ecb.SetComponent(entityIndex, newParticle, particle);
-        ecb.SetComponent(entityIndex, newParticle, newTranslation);
-        ecb.AddComponent(entityIndex, newParticle, newScale);
-        ecb.SetComponent(entityIndex, newParticle, newColor);
+        ecb.SetComponent(newParticle, particle);
+        ecb.SetComponent(newParticle, newTranslation);
+        ecb.AddComponent(newParticle, newScale);
+        ecb.SetComponent(newParticle, newColor);
     }
 
     public void SpawnParticles(EntityCommandBuffer _ecb, float3 _position, ParticleType _type, float3 _vel, float _velocityJitter = 6f, int count = 1)
