@@ -130,6 +130,9 @@ public partial struct DeadBeeJob : IJobEntity
                     ecb.AddComponent(resource.Index, resource, fallingResourceTag);
                 }
             }
+
+            bee.resourceTarget = Entity.Null;
+            bee.enemyTarget = Entity.Null;
         }
 
         if (bee.dead)

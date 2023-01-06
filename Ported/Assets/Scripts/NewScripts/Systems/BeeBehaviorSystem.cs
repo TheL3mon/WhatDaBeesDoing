@@ -51,7 +51,6 @@ public partial class BeeBehaviorSystem : SystemBase
             positions = positions,
             resourceData = _resourceData,
             resourceStatus = resourceStatus,
-            beeStatus = beeStatus,
             stackHeights = stackHeights,
             particlePrefab = particlePrefab,
             entityManager = EntityManager,
@@ -127,13 +126,21 @@ public partial struct CollectResourceJob : IJobEntity
     void Execute(Entity e, ref Bee bee, ref PhysicsVelocity velocity, in CollectingTag tag, in BeeData beeData)
     {
         if (resources.Length == 0)
+        {
+            ecb.RemoveComponent<CollectingTag>(e);
+            bee.resourceTarget = Entity.Null;
             return;
+        }
 
         var target = bee.resourceTarget;
         var index = resources.IndexOf(target);
 
         if (index == -1)
+        {
+            ecb.RemoveComponent<CollectingTag>(e);
+            bee.resourceTarget = Entity.Null;
             return;
+        }
 
         var resource = resources[index];
         var status = resourceStatus[resource];
@@ -156,7 +163,13 @@ public partial struct CollectResourceJob : IJobEntity
             var resourceHeight = status.height;
 
             if (stackHeight != resourceHeight)
-                bee.resourceTarget = Entity.Null;
+            {
+                {
+                    ecb.RemoveComponent<CollectingTag>(e);
+                    bee.resourceTarget = Entity.Null;
+                    return;
+                }
+            }
             else
             {
                 var resourcePos = positions[bee.resourceTarget].Value;
@@ -267,7 +280,6 @@ public partial struct TargetingJob : IJobEntity
     [ReadOnly] public NativeArray<Entity> resources;
     [ReadOnly] public ComponentDataFromEntity<Translation> positions;
     [ReadOnly] public ComponentDataFromEntity<Resource> resourceStatus;
-    [ReadOnly] public ComponentDataFromEntity<Bee> beeStatus;
     [ReadOnly] public ResourceData resourceData;
     [ReadOnly] public NativeList<int> stackHeights;
     public EntityManager entityManager;
@@ -310,20 +322,22 @@ public partial struct TargetingJob : IJobEntity
             else
             {
                 //Try to taget a random resource
-
-                var resource = resources[random.NextInt(resources.Length)];
-                var status = resourceStatus[resource];
-
-                int index = status.gridX + status.gridY * resourceData.gridCounts.x;
-
-                if (status.height == stackHeights[index])
+                if (resources.Length > 0)
                 {
-                    bee.resourceTarget = resource;
-                    ecb.AddComponent(e, new CollectingTag());
-                }
-                else
-                {
-                    bee.resourceTarget = Entity.Null;
+                    var resource = resources[random.NextInt(resources.Length)];
+                    var status = resourceStatus[resource];
+
+                    int index = status.gridX + status.gridY * resourceData.gridCounts.x;
+
+                    if (status.height == stackHeights[index])
+                    {
+                        bee.resourceTarget = resource;
+                        ecb.AddComponent(e, new CollectingTag());
+                    }
+                    else
+                    {
+                        bee.resourceTarget = Entity.Null;
+                    }
                 }
             }
         }
