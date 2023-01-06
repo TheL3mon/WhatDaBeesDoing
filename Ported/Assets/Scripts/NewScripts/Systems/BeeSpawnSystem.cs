@@ -30,6 +30,12 @@ public partial class BeeSpawnSystem : SystemBase
     float timer;
     const int resourceSpawnPerFrame = 100;
 
+    protected override void OnCreate()
+    {
+        Enabled = true;
+        base.OnCreate();
+    }
+
     protected override void OnStartRunning()
     {
         _blueTeamPrefab = GetSingleton<BeePrefabs>().blueBee;

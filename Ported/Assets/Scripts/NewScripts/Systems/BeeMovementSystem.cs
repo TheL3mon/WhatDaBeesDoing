@@ -13,6 +13,12 @@ public partial class BeeMovementSystem : SystemBase
     private Random _random;
     private FieldData _fieldData;
 
+    protected override void OnCreate()
+    {
+        this.Enabled = true;
+        base.OnCreate();
+    }
+
     protected override void OnStartRunning()
     {
         _fieldData = GetSingleton<FieldData>();
@@ -21,8 +27,6 @@ public partial class BeeMovementSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        this.Enabled = true;
-
         _random = new Random();
         _random.InitState((uint)UnityEngine.Random.Range(0, 100000));
 
@@ -53,7 +57,9 @@ public partial class BeeMovementSystem : SystemBase
             field = _fieldData
         }.ScheduleParallel();
 
-        movementJob.Complete();
+        Dependency = movementJob;
+
+        Dependency.Complete();
 
         Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Alive: " + aliveArr.Length + ", Dead: " + deadArr.Length);
 

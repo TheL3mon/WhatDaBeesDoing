@@ -30,6 +30,7 @@ public partial class ParticleSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        this.Enabled = true;
         timer = Time.DeltaTime;
 
         // TEST SPAWN
@@ -39,6 +40,7 @@ public partial class ParticleSystem : SystemBase
             // last property (velocity) should be set to -> bee.velocity * .35f
             SpawnParticles(ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1, -10, 1));
         }
+
 
         var ecb2 = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 

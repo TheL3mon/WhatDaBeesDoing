@@ -5,11 +5,18 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Jobs;
 
 public partial class BeeDeathSystem : SystemBase
 {
     private FieldData _fieldData;
     private int cleanUpLimit;
+
+    protected override void OnCreate()
+    {
+        this.Enabled = true;
+        base.OnCreate();
+    }
 
     protected override void OnStartRunning()
     {
@@ -20,14 +27,14 @@ public partial class BeeDeathSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        this.Enabled = true;
 
         var deltaTime = Time.DeltaTime;
+
+        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
 
         var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
         var deadArr = deadQuery.ToEntityArray(Allocator.Persistent);
-        var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
         var resourceQuery = GetEntityQuery(ComponentType.ReadOnly<ResourceTag>());
         var resourceArr = resourceQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
@@ -37,7 +44,13 @@ public partial class BeeDeathSystem : SystemBase
 
         var beeStatus = GetComponentDataFromEntity<Bee>(true);
         var resourceStatus = GetComponentDataFromEntity<Resource>(true);
+
         var positions = GetComponentDataFromEntity<Translation>(true);
+
+        var clearReferencesJob = new ClearReferencesJob
+        {
+            beeStatuses = beeStatus
+        };
 
         var deadBeeJob = new DeadBeeJob
         {
@@ -47,38 +60,54 @@ public partial class BeeDeathSystem : SystemBase
             resourceStatus = resourceStatus,
             positions = positions,
             dt = deltaTime
-        }.ScheduleParallel();
+        };
 
-        deadBeeJob.Complete();
-
-        var clearReferencesJob = new ClearReferencesJob
-        {
-            beeStatuses = beeStatus
-
-        }.ScheduleParallel(deadBeeJob);
-
-        clearReferencesJob.Complete();
-
-        var clearReferencesResourceJob = new ClearResourceReferencesJob
+        var clearResourceReferencesJob = new ClearResourceReferencesJob
         {
             resourceStatuses = resourceStatus,
             beeStatuses = beeStatus,
             ecb = ecb.AsParallelWriter()
-        }.ScheduleParallel(clearReferencesJob);
+        };
+        //Dependency.Complete();
 
-        clearReferencesResourceJob.Complete();
 
-        //Debug.Log("Deleted bees " + deleteArr.Length);
+        //clearResourceReferencesJobHandle.Complete();
+
+        //var deadBeeJobHandle = deadBeeJob.Schedule();
+        //var clearReferencesJobHandle = clearReferencesJob.Schedule(deadBeeJobHandle);
+        //var clearResourceReferencesJobHandle = clearResourceReferencesJob.Schedule(deadBeeJobHandle);
+
+        var deadBeeJobHandle = deadBeeJob.Schedule();
+        deadBeeJobHandle.Complete();
+        var clearReferencesJobHandle = clearReferencesJob.Schedule();
+        clearReferencesJobHandle.Complete();
+        var clearResourceReferencesJobHandle = clearResourceReferencesJob.Schedule();
+        clearResourceReferencesJobHandle.Complete();
+
+        //Dependency = JobHandle.CombineDependencies(clearReferencesJobHandle, clearResourceReferencesJobHandle);
+        Dependency = clearResourceReferencesJobHandle;
 
         if (deleteArr.Length > cleanUpLimit)
         {
             var deleteBeeJob = new DeleteDeadBee
             {
-                ecb = ecb.AsParallelWriter(),
-                positions = positions
-            }.ScheduleParallel(clearReferencesResourceJob);
-            deleteBeeJob.Complete();
+                ecb = ecb.AsParallelWriter()
+            };
+            var deleteBeeJobHandle = deleteBeeJob.ScheduleParallel();
+            deleteBeeJobHandle.Complete();
+            //Dependency = JobHandle.CombineDependencies(deleteBeeJobHandle, Dependency);
+            Dependency = deleteBeeJobHandle;
         }
+
+        //Dependency = JobHandle.CombineDependencies(deadBeeJobHandle, clearReferencesJobHandle);
+
+        //var deadBeeJobHandle = deadBeeJob.Schedule(clearReferencesJobHandle);
+        ////var clearResourceReferencesJobHandle = clearReferencesResourceJob.Schedule(deadBeeJobHandle);
+
+        //Dependency = clearReferencesJobHandle;
+        // Dependency = JobHandle.CombineDependencies(deadBeeJobHandle, clearReferencesJobHandle);
+
+        Dependency.Complete();
 
         ecb.Playback(EntityManager);
 
@@ -213,7 +242,6 @@ public partial struct DeleteDeadBee : IJobEntity
 {
 
     public EntityCommandBuffer.ParallelWriter ecb;
-    [ReadOnly] public ComponentDataFromEntity<Translation> positions;
 
     void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in DeleteTag tag)
     {

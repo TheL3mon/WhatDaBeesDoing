@@ -15,12 +15,12 @@ public partial class BeeBehaviorSystem : SystemBase
 
     protected override void OnCreate()
     {
+        this.Enabled = true;
         base.OnCreate();
     }
 
     protected override void OnUpdate()
     {
-        this.Enabled = true;
 
         _random = new Random((uint)UnityEngine.Random.Range(1, 500000));
         _particlePrefab = GetSingleton<ParticleData>().particlePrefab;
@@ -58,7 +58,7 @@ public partial class BeeBehaviorSystem : SystemBase
             random = _random
         }.ScheduleParallel();
 
-        targetingJob.Complete();
+        Dependency = targetingJob;
 
         var collectingJob = new CollectResourceJob
         {
@@ -72,9 +72,11 @@ public partial class BeeBehaviorSystem : SystemBase
             dt = Time.DeltaTime,
             ecb = ecb,
             random = _random
-        }.Schedule(targetingJob);
+        }.Schedule(Dependency);
 
-        collectingJob.Complete();
+        Dependency = collectingJob;
+
+        Dependency.Complete();
 
         ecb.Playback(World.EntityManager);
 

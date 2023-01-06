@@ -8,6 +8,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
@@ -20,10 +21,18 @@ public partial class ResourceSystem : SystemBase
     private Entity _particlePrefab;
 
     private Entity _resourcePrefab;
+
     private FieldData _fieldData;
     public static ResourceData _resourceData;
 
     public static NativeList<int> _stackHeights;
+
+    protected override void OnCreate()
+    {
+        this.Enabled = true;
+
+        base.OnCreate();
+    }
 
     private void SetupResource()
     {
@@ -78,8 +87,7 @@ public partial class ResourceSystem : SystemBase
             rd = _resourceData,
             fd = _fieldData,
             stackHeights = _stackHeights
-        }.Schedule();
-        fallingResourceJob.Complete();
+        };
 
         var spawnBeeFromResourceJob = new SpawnBeeFromResourceJob
         {
@@ -88,9 +96,13 @@ public partial class ResourceSystem : SystemBase
             blueBee = _blueTeamPrefab,
             yellowBee = _yellowTeamPrefab,
             particlePrefab = _particlePrefab
+        };
 
-        }.Schedule();
-        spawnBeeFromResourceJob.Complete();
+        var jobFallingResource = fallingResourceJob.Schedule();
+        var jobHandleSpawn = spawnBeeFromResourceJob.Schedule(jobFallingResource);
+        Dependency = jobHandleSpawn;
+
+        Dependency.Complete();
 
         ecb.Playback(EntityManager);
         ecb.Dispose();

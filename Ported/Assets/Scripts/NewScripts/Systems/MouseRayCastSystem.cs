@@ -29,6 +29,7 @@ public partial class MouseRayCastSystem : SystemBase
 
     protected override void OnStartRunning()
     {
+
         _marker = GetSingleton<BeePrefabs>().mouseMarker;
         //_resource = GetSingleton<BeePrefabs>().resource;
         _resourcePrefab = GetSingleton<BeePrefabs>().resource;
@@ -42,6 +43,7 @@ public partial class MouseRayCastSystem : SystemBase
 
     protected override void OnCreate()
     {
+        this.Enabled = true;
         _buildPhysicsWorld = World.GetOrCreateSystem<BuildPhysicsWorld>();
     }
 
