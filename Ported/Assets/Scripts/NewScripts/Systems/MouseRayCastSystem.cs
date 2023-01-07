@@ -13,7 +13,6 @@ using Plane = UnityEngine.Plane;
 using Ray = UnityEngine.Ray;
 using RaycastHit = Unity.Physics.RaycastHit;
 
-[AlwaysUpdateSystem]
 public partial class MouseRayCastSystem : SystemBase
 {
 

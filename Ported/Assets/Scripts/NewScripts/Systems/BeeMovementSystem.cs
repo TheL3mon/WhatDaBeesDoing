@@ -130,10 +130,12 @@ public partial struct MoveBeeJob : IJobEntity
 
         if (bee.team == 0)
         {
-            randomAttractorPos = positions[blueTeam[random.NextInt(0, blueTeam.Length - 1)]];
+            randomAttractorPos = positions[blueTeam[random.NextInt(0, blueTeam.Length)]];
+            randomRepellerPos = positions[blueTeam[random.NextInt(0, blueTeam.Length)]];
         }
         else
         {
+            randomAttractorPos = positions[yellowTeam[random.NextInt(0, yellowTeam.Length)]];
             randomRepellerPos = positions[yellowTeam[random.NextInt(0, yellowTeam.Length)]];
         }
 
@@ -144,7 +146,7 @@ public partial struct MoveBeeJob : IJobEntity
             bee.velocity += deltaAttract * (beeData.teamAttraction * dt / distAttract);
         }
 
-        var delta = randomAttractorPos.Value - position.Value;
+        var delta = randomRepellerPos.Value - position.Value;
         var dist = Mathf.Sqrt(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
         if (dist > 0f)
         {

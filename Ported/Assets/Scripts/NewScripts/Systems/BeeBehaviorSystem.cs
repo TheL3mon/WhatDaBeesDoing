@@ -56,6 +56,7 @@ public partial class BeeBehaviorSystem : SystemBase
             resourceStatus = resourceStatus,
             stackHeights = stackHeights,
             particlePrefab = _particlePrefab,
+            fd = fieldData,
             dt = dt,
             ecb = ecb,
             random = _random
@@ -301,13 +302,11 @@ public partial struct TargetingJob : IJobEntity
 
                 if (bee.team == 0)
                 {
-                    targetPos = new float3(50, 0, 0);
+                    targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * 1, 0f, positions[e].Value.z);
                 }
                 else
                 {
-
-                    //targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * side, 0f, positions[e].Value.z);
-                    targetPos = new float3(-50, random.NextFloat(0, fd.size.y), random.NextFloat(0, fd.size.z));
+                    targetPos = new float3(-fd.size.x * .45f + fd.size.x * .9f * 0, 0f, positions[e].Value.z);
                 }
 
                 //var beePos = new Vector3(positions[e].Value.x, positions[e].Value.y, positions[e].Value.z);
