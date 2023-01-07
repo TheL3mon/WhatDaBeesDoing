@@ -211,7 +211,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 729665197}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
   m_Name: 
@@ -615,16 +615,17 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Right click + drag: Rotate camera
+  m_text: 'Right Click + Drag: <i>Rotate camera</i>
 
-    Scroll: Zoom in/out
+    Scroll: <i>Zoom in/out</i>
 
-    Left click:
-    Spawn resource
+    Left
+    Click: <i>Spawn resources</i>
 
-    R key:  Restart
+    R Key: <i>Restart</i>
 
-    H key: show/hide this information'
+    H Key: <i>Show/hide
+    this info</i>'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
