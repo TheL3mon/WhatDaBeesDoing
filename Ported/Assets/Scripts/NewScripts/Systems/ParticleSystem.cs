@@ -56,7 +56,7 @@ public partial class ParticleSystem : SystemBase
         ecb2.Dispose();
     }
 
-    public static void InstantiateSpawnFlashParticle(int entityIndex, EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateSpawnFlashParticle(int entityIndex, ref EntityCommandBuffer.ParallelWriter ecb, Entity particlePrefab, float3 position, float3 velocity, ref Random random, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -68,9 +68,6 @@ public partial class ParticleSystem : SystemBase
         //    lifeDuration = rand.NextFloat(.25f,.5f),
         //    stuck = false
         //};
-        var random = new Random();
-        random.InitState((uint)UnityEngine.Random.Range(0, 100000));
-
 
         var dir = random.NextFloat3();
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
@@ -83,7 +80,7 @@ public partial class ParticleSystem : SystemBase
             type = ParticleType.SpawnFlash,
             position = position,
             velocity = (velocity + dir * _velocityJitter) * 5,
-            size = random.NextFloat(.5f, 1f),
+            size = random.NextFloat(0.3f, 0.5f),
             life = 1f,
             lifeDuration = random.NextFloat(.25f, .5f),
             stuck = false
@@ -94,7 +91,7 @@ public partial class ParticleSystem : SystemBase
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateBloodParticle(int entityIndex, EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, Random random, float _velocityJitter = 6f)
+    public static void InstantiateBloodParticle(int entityIndex, ref EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, ref Random random, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -127,6 +124,49 @@ public partial class ParticleSystem : SystemBase
         UnityEngine.Color color = UnityEngine.Color.red;
 
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
+    }
+
+    public static void InstantiateParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
+    {
+        //Debug.Log("BOFA DEEZ PARTICLE NUTS");
+        var newParticle = ecb.Instantiate(entityIndex, particlePrefab);
+        //var newParticle = ecb.Instantiate(particlePrefab);
+
+        var newTranslation = new Translation
+        {
+            Value = particle.position
+        };
+
+        var newScale = new NonUniformScale
+        {
+            Value = particle.size
+        };
+
+        if (particle.type == ParticleType.SpawnFlash)
+        {
+            color = UnityEngine.Color.white;
+
+            ParticleSpawnTag spawnTag = new ParticleSpawnTag();
+            ecb.AddComponent(entityIndex, newParticle, spawnTag);
+        }
+        else if (particle.type == ParticleType.Blood)
+        {
+            ParticleBloodTag bloodTag = new ParticleBloodTag();
+            ecb.AddComponent(entityIndex, newParticle, bloodTag);
+        }
+        ParticleTag particleTag = new ParticleTag();
+        ecb.AddComponent(entityIndex, newParticle, particleTag);
+
+        particle.color = color;
+        var newColor = new ParticleColorComponent
+        {
+            Value = color
+        };
+
+        ecb.SetComponent(entityIndex, newParticle, particle);
+        ecb.SetComponent(entityIndex, newParticle, newTranslation);
+        ecb.AddComponent(entityIndex, newParticle, newScale);
+        ecb.SetComponent(entityIndex, newParticle, newColor);
     }
 
     public static void InstantiateParticle(int entityIndex, EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)

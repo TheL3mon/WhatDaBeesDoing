@@ -102,7 +102,15 @@ public partial struct MoveBeeJob : IJobEntity
         if (bee.dead)
         {
             if (System.Math.Abs(position.Value.y) > field.size.y * .48f)
+            {
                 bee.velocity = float3.zero;
+                var pos = position.Value;
+                if (position.Value.y < -(field.size.y/2))
+                {
+                    pos = -(field.size.y / 2);
+                }
+                ecb.SetComponent(entityIndex, e, new Translation { Value = pos });
+            }
             else
             {
                 bee.velocity = field.gravity * new float3(0, -9.8f, 0);

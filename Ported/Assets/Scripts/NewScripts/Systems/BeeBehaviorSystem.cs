@@ -192,7 +192,7 @@ public partial struct TargetingJob : IJobEntity
 
                     for (int i = 0; i < 5; i++)
                     {
-                        ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, bee.velocity, random, 2f);
+                        ParticleSystem.InstantiateBloodParticle(entityIndex, ref ecb, particlePrefab, positions[e].Value, bee.velocity, ref random, 2f);
                     }
 
 
