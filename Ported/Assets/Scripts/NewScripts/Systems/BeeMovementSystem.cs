@@ -107,7 +107,7 @@ public partial struct MoveBeeJob : IJobEntity
                 var pos = position.Value;
                 if (position.Value.y < -(field.size.y/2))
                 {
-                    pos = -(field.size.y / 2);
+                    pos.y = -(field.size.y / 2);
                 }
                 ecb.SetComponent(entityIndex, e, new Translation { Value = pos });
             }
