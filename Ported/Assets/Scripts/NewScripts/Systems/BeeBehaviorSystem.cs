@@ -330,6 +330,7 @@ public partial struct TargetingJob : IJobEntity
                 {
                     var r = new Resource();
                     r.position = positions[e].Value;
+                    r.position.y -= 0.5f;
                     r.height = -1;
                     r.holder = e;
                     r.holderTeam = -1;
