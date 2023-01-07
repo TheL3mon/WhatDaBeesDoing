@@ -13,6 +13,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Random = Unity.Mathematics.Random;
 
 public partial class ResourceSystem : SystemBase
 {
@@ -95,7 +96,7 @@ public partial class ResourceSystem : SystemBase
             rd = _resourceData,
             blueBee = _blueTeamPrefab,
             yellowBee = _yellowTeamPrefab,
-            particlePrefab = _particlePrefab
+            particlePrefab = _particlePrefab,
         };
 
         var jobFallingResource = fallingResourceJob.Schedule();
@@ -232,7 +233,10 @@ public partial class ResourceSystem : SystemBase
                 };
 
                 //ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
-                ParticleSystem.InstantiateSpawnFlashParticle(entityIndex, ecb, particlePrefab, position.Value, new float3(1, -10, 1));
+                for (int j = 0; j < 5; j++)
+                { 
+                    ParticleSystem.InstantiateSpawnFlashParticle(entityIndex, ecb, particlePrefab, position.Value, new float3(1, -0.5f, 1));
+                }
 
                 ecb.SetComponent(newBee, newTranslation);
                 //ecb.SetComponent(newBee, new Bee { seed = seed });

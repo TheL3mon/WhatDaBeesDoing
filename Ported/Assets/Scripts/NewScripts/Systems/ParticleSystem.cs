@@ -68,15 +68,24 @@ public partial class ParticleSystem : SystemBase
         //    lifeDuration = rand.NextFloat(.25f,.5f),
         //    stuck = false
         //};
+        var random = new Random();
+        random.InitState((uint)UnityEngine.Random.Range(0, 100000));
+
+
+        var dir = random.NextFloat3();
+        var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+        dir /= len;
+        dir -= 0.5f;
+        dir *= random.NextFloat(0, 2);
 
         Particle particle = new Particle
         {
             type = ParticleType.SpawnFlash,
             position = position,
-            velocity = velocity,
-            size = 1.5f,
+            velocity = (velocity + dir * _velocityJitter) * 5,
+            size = random.NextFloat(.5f, 1f),
             life = 1f,
-            lifeDuration = .33f,
+            lifeDuration = random.NextFloat(.25f, .5f),
             stuck = false
         };
 
@@ -85,7 +94,7 @@ public partial class ParticleSystem : SystemBase
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateBloodParticle(int entityIndex, EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, float _velocityJitter = 6f)
+    public static void InstantiateBloodParticle(int entityIndex, EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, Random random, float _velocityJitter = 6f)
     {
         //Particle particle = new Particle
         //{
@@ -97,12 +106,18 @@ public partial class ParticleSystem : SystemBase
         //    lifeDuration = rand.NextFloat(3f, 5f),
         //    stuck = false
         //};
+        var dir = random.NextFloat3();
+        var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
+        dir /= len;
+        dir -= 0.5f;
+        dir *= random.NextFloat(0, 2);
+
 
         Particle particle = new Particle
         {
             type = ParticleType.Blood,
             position = position,
-            velocity = velocity,
+            velocity = (velocity + dir * _velocityJitter)/3,
             size = 0.15f,
             life = 1f,
             lifeDuration = 4f,
@@ -272,7 +287,7 @@ public partial struct ParticleBehaviorJob : IJobEntity
     {
         if (!particle.stuck)
         {
-            particle.velocity += new float3(0, -1, 0) * (fieldData.gravity * deltaTime);
+            particle.velocity += new float3(0, -1, 0) * ((fieldData.gravity *9.8f) * deltaTime);
             particle.position += particle.velocity * deltaTime;
 
             if (System.Math.Abs(particle.position.x) > fieldData.size.x * .5f)

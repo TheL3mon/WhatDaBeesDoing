@@ -190,7 +190,11 @@ public partial struct TargetingJob : IJobEntity
 
                     //ParticleSystem.InstantiateBloodParticle(ecb, particlePrefab,positions[e].Value, new float3(1, -10, 1));
 
-                    ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
+                    for (int i = 0; i < 5; i++)
+                    {
+                        ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, bee.velocity, random, 2f);
+                    }
+
 
 
                     ecb.RemoveComponent<AliveTag>(bee.enemyTarget);

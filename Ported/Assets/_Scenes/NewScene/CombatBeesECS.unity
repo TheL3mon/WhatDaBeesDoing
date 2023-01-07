@@ -627,8 +627,9 @@ MonoBehaviour:
     H Key: <i>Show/hide
     this info</i>'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 607a5b6283ce4734d80846a23b94a367, type: 2}
+  m_sharedMaterial: {fileID: 2003969852254030156, guid: 607a5b6283ce4734d80846a23b94a367,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
