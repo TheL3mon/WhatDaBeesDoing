@@ -42,6 +42,8 @@ public partial class BeeBehaviorSystem : SystemBase
         var resourceStatus = GetComponentDataFromEntity<Resource>(true);
         var beeStatus = GetComponentDataFromEntity<Bee>(true);
 
+        UnityEngine.Color color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);
+
 
         var targetingJob = new TargetingJob
         {
@@ -56,7 +58,8 @@ public partial class BeeBehaviorSystem : SystemBase
             fd = fieldData,
             dt = dt,
             ecb = ecb,
-            random = _random
+            random = _random, 
+            randomblood = color
         }.Schedule();
 
         Dependency = targetingJob;
@@ -85,6 +88,7 @@ public partial struct TargetingJob : IJobEntity
     [ReadOnly] public FieldData fd;
     public Entity particlePrefab;
     public float dt;
+    public UnityEngine.Color randomblood;
     //public EntityCommandBuffer ecb;
     public EntityCommandBuffer ecb;
 
@@ -190,7 +194,7 @@ public partial struct TargetingJob : IJobEntity
 
                     for (int i = 0; i < 5; i++)
                     {
-                        ParticleSystem.InstantiateBloodParticle(entityIndex, ref ecb, particlePrefab, positions[e].Value, bee.velocity, ref random, 2f);
+                        ParticleSystem.InstantiateBloodParticle(entityIndex, ref ecb, particlePrefab, positions[e].Value, bee.velocity, ref random, randomblood, 2f);
                     }
 
 

@@ -78,7 +78,7 @@ public partial class ParticleSystem : SystemBase
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
-    public static void InstantiateBloodParticle(int entityIndex, ref EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, ref Random random, float _velocityJitter = 6f)
+    public static void InstantiateBloodParticle(int entityIndex, ref EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, ref Random random, UnityEngine.Color color, float _velocityJitter = 6f)
     {
         var dir = random.NextFloat3();
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
@@ -98,7 +98,6 @@ public partial class ParticleSystem : SystemBase
             stuck = false
         };
 
-        UnityEngine.Color color = Color.red;
 
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
