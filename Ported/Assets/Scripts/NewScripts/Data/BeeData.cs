@@ -32,7 +32,7 @@ public struct BeeData : IComponentData
     public float hitDistance;
     public float maxSpawnSpeed;
     //[Space(10)]
-    public int startBeeCount;
+    //public int startBeeCount;
 
     //List<Bee> bees;
     //List<Bee>[] teamsOfBees;

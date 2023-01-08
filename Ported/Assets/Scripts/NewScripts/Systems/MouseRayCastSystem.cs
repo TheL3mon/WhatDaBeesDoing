@@ -104,6 +104,11 @@ public partial class MouseRayCastSystem : SystemBase
         if (Input.GetMouseButtonUp(0))
         {
             var markerPos = GetComponent<Translation>(_marker);
+            var outsidePos = new float3 { x = -200, y = -200, z = -200 };
+            if(markerPos.Value.x == outsidePos.x && markerPos.Value.y == outsidePos.y && markerPos.Value.z == outsidePos.z)
+            {
+                return;
+            }
             Debug.Log("Spawn position = " + markerPos.Value);
             if (markerPos.Value.z == -15)
             {
