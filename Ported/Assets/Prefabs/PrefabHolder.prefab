@@ -64,8 +64,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 586effd2917b9544a8632e65a6d08431, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  initialSpawnPerTeam: 10
-  spawnPerAction: 10
+  initialSpawnPerTeam: 100
+  spawnPerAction: 0
 --- !u!114 &3346073098161235699
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78,12 +78,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b7fe0b24b7abd44a868cebe546575d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  beesPerResource: 10
+  beesPerResource: 20
   resourceSize: 1
   snapStiffness: 0
   carryStiffness: 0
   spawnRate: 0
-  startResourceCount: 0
+  startResourceCount: 100
   gridCounts:
     x: 10
     y: 10

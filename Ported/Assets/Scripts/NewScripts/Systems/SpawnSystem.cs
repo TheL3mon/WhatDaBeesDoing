@@ -130,7 +130,7 @@ public partial class SpawnSystem : SystemBase
 
         //spawnEnemyBeeCounter += UnityEngine.Time.deltaTime;
 
-        if (true)
+        if (false)
         {
             _random.InitState(4554);
             _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);

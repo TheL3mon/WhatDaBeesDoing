@@ -135,7 +135,7 @@ MonoBehaviour:
   maxBeeSize: 0.5
   speedStretch: 0.2
   rotationStiffness: 5
-  aggression: 0.5
+  aggression: 0.1
   chaseForce: 50
   carryForce: 25
   grabDistance: 0.5
