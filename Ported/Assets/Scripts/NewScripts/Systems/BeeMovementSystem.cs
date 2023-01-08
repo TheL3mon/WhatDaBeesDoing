@@ -24,7 +24,6 @@ public partial class BeeMovementSystem : SystemBase
         _fieldData = GetSingleton<FieldData>();
     }
 
-
     protected override void OnUpdate()
     {
         _random = new Random();
@@ -49,7 +48,7 @@ public partial class BeeMovementSystem : SystemBase
         var positions = GetComponentDataFromEntity<Translation>(true);
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
 
-        var deltaTime = UnityEngine.Time.deltaTime;
+        var deltaTime = Time.DeltaTime;
 
         var movementJob = new MoveBeeJob
         {
@@ -66,7 +65,7 @@ public partial class BeeMovementSystem : SystemBase
 
         Dependency.Complete();
 
-        Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Blue: " + blueArr.Length + " Yellow: " + yellowArr.Length + ", Dead: " + deadArr.Length);
+        //Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Blue: " + blueArr.Length + " Yellow: " + yellowArr.Length + ", Dead: " + deadArr.Length);
 
         blueArr.Dispose();
         yellowArr.Dispose();
@@ -91,6 +90,7 @@ public partial struct MoveBeeJob : IJobEntity
 
     void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, ref Rotation rotation, ref NonUniformScale nus, in Translation position, in BeeData beeData)
     {
+
         if (float.IsNaN(position.Value.x) || float.IsNaN(position.Value.y) || float.IsNaN(position.Value.z))
         {
             return;

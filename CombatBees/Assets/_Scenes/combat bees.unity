@@ -301,7 +301,7 @@ MonoBehaviour:
   snapStiffness: 2
   carryStiffness: 15
   spawnRate: 10
-  beesPerResource: 100
+  beesPerResource: 0
   startResourceCount: 1000
 --- !u!4 &129398392
 Transform:
@@ -367,7 +367,7 @@ MonoBehaviour:
   attackForce: 500
   hitDistance: 0.5
   maxSpawnSpeed: 75
-  startBeeCount: 1000
+  startBeeCount: 10000
   spawnEnemyBeeTimer: 0.5
   spawnEnemyBeeCounter: 0
 --- !u!4 &374635490

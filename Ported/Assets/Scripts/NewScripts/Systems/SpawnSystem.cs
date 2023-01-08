@@ -130,7 +130,7 @@ public partial class SpawnSystem : SystemBase
 
         //spawnEnemyBeeCounter += UnityEngine.Time.deltaTime;
 
-        if (spawnEnemyBeeCounter > spawnEnemyBeeTimer)
+        if (true)
         {
             _random.InitState(4554);
             _ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -146,7 +146,7 @@ public partial class SpawnSystem : SystemBase
             int yellowToSpawn = _beeSpawnData.initialSpawnPerTeam - yellowArr.Length;
             int resourcesToSpawn = _resourceData.startResourceCount - resourceArr.Length;
 
-            Debug.Log("Spawning should happen, blue: " + blueToSpawn +", yellow: " + ", resources: " + resourcesToSpawn);
+            //Debug.Log("Spawning should happen, blue: " + blueToSpawn +", yellow: " + ", resources: " + resourcesToSpawn);
 
             float3 pos = new float3(-1, 0, 0) * (-_fieldData.size.x * .4f + _fieldData.size.x * .8f * 0);
             var color = UnityEngine.Random.ColorHSV(-.05f, .05f, .75f, 1f, .3f, .8f);

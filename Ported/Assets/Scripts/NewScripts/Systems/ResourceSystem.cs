@@ -14,6 +14,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEngine.Rendering.DebugUI;
 using Random = Unity.Mathematics.Random;
 
 public partial class ResourceSystem : SystemBase
@@ -134,6 +135,30 @@ public partial class ResourceSystem : SystemBase
         ecb.AddComponent(resourceEntity, fallingResourceTag);
     }
 
+    public static int2 GetGridIndex(float3 pos, in ResourceData rd)
+    {
+        var minGridPos = rd.minGridPos;
+        var gridSize = rd.gridSize;
+        var gridCounts = rd.gridCounts;
+
+        var gridX = Mathf.FloorToInt((pos.x - minGridPos.x + gridSize.x * .5f) / gridSize.x);
+
+
+        var gridY = Mathf.FloorToInt((pos.z - minGridPos.y + gridSize.y * .5f) / gridSize.y);
+
+        gridX = Mathf.Clamp(gridX, 0, gridCounts.x - 1);
+        gridY = Mathf.Clamp(gridY, 0, gridCounts.y - 1);
+
+        return new int2(gridX, gridY);
+    }
+
+    public static float3 GetStackPos(int x, int y, int height, in ResourceData rd, in FieldData fd)
+    {
+        var minGridPos = rd.minGridPos;
+        var gridSize = rd.gridSize;
+        return new float3(minGridPos.x + x * gridSize.x, -fd.size.y * .5f + (height + .5f) * rd.resourceSize, minGridPos.y + y * gridSize.y);
+    }
+
     [BurstCompile]
     public partial struct FallingResourceJob : IJobEntity
     {
@@ -146,13 +171,8 @@ public partial class ResourceSystem : SystemBase
 
         void Execute(Entity resourceEntity, ref Resource resource, in FallingResourceTag frt)
         {
-            //Apply gravity on resource
-            var g = fd.gravity * new float3(0.0f, -1.0f, 0.0f);
-            resource.velocity += g * dt;
-            resource.position += resource.velocity;
-
             //Snap to grid
-            var gridIndex = GetGridIndex(resource);
+            var gridIndex = GetGridIndex(resource.position, rd);
             resource.gridX = gridIndex[0];
             resource.gridY = gridIndex[1];
 
@@ -161,12 +181,16 @@ public partial class ResourceSystem : SystemBase
             //Debug.Log("gridPos1: (" + resource.gridX + ", " + resource.gridY + ") index: " + index);
             int height = stackHeights[index];
 
-            var pos = GetStackPos(resource.gridX, resource.gridY, height);
+            //Apply gravity on resource
+            var g = fd.gravity * new float3(0.0f, -1.0f, 0.0f);
+            resource.velocity += g * dt;
+            resource.position += resource.velocity;
+
+            var pos = GetStackPos(resource.gridX, resource.gridY, height, rd, fd);
             var floorY = pos.y;
 
-            if (resource.position.y < floorY)
+            if (resource.position.y < floorY && height < (fd.size.y * rd.resourceSize))
             {
-
                 if (Mathf.Abs(resource.position.x) > fd.size.x * .3f)
                 {
                     int team = 0;
@@ -180,10 +204,10 @@ public partial class ResourceSystem : SystemBase
                 }
                 else
                 {
-                    stackHeights[index]++;
-                    resource.height = stackHeights[index];
-                    resource.position = pos;
-                    resource.velocity = float3.zero;
+                        stackHeights[index]++;
+                        resource.height = stackHeights[index];
+                        resource.position = pos;
+                        resource.velocity = float3.zero;
                 }
 
                 ecb.RemoveComponent<FallingResourceTag>(resourceEntity);
@@ -195,30 +219,7 @@ public partial class ResourceSystem : SystemBase
             });
         }
 
-        int2 GetGridIndex(Resource resource)
-        {
-            var pos = resource.position;
-            var minGridPos = rd.minGridPos;
-            var gridSize = rd.gridSize;
-            var gridCounts = rd.gridCounts;
 
-            var gridX = Mathf.FloorToInt((pos.x - minGridPos.x + gridSize.x * .5f) / gridSize.x);
-
-
-            var gridY = Mathf.FloorToInt((pos.z - minGridPos.y + gridSize.y * .5f) / gridSize.y);
-
-            gridX = Mathf.Clamp(gridX, 0, gridCounts.x - 1);
-            gridY = Mathf.Clamp(gridY, 0, gridCounts.y - 1);
-
-            return new int2(gridX, gridY);
-        }
-
-        float3 GetStackPos(int x, int y, int height)
-        {
-            var minGridPos = rd.minGridPos;
-            var gridSize = rd.gridSize;
-            return new float3(minGridPos.x + x * gridSize.x, -fd.size.y * .5f + (height + .5f) * rd.resourceSize, minGridPos.y + y * gridSize.y);
-        }
     }
 
 

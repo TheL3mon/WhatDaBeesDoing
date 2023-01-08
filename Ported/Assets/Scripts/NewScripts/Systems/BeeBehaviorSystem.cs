@@ -92,6 +92,7 @@ public partial struct TargetingJob : IJobEntity
 
     void Execute(Entity e, [EntityInQueryIndex] int entityIndex, ref Bee bee, in Translation position, in BeeData beeData, in AliveTag alive)
     {
+        //Debug.Log("How often?");
 
         bee.isAttacking = false;
         bee.isHoldingResource = false;

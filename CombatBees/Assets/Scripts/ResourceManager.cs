@@ -111,6 +111,8 @@ public class ResourceManager : MonoBehaviour {
 			}
 		}
 
+		int destroyedResourcesCount = 0;
+
 		for (int i=0;i<resources.Count;i++) {
 			Resource resource = resources[i];
 			if (resource.holder != null) {
@@ -146,22 +148,38 @@ public class ResourceManager : MonoBehaviour {
 							BeeManager.SpawnBee(resource.position,team);
 						}
 						ParticleManager.SpawnParticle(resource.position,ParticleType.SpawnFlash,Vector3.zero,6f,5);
-						DeleteResource(resource);
+						destroyedResourcesCount++;
+                        DeleteResource(resource);
 					} else {
 						resource.stacked = true;
 						resource.stackIndex = stackHeights[resource.gridX,resource.gridY];
 						if ((resource.stackIndex + 1) * resourceSize < Field.size.y) {
 							stackHeights[resource.gridX,resource.gridY]++;
-						} else {
-							DeleteResource(resource);
-						}
+						} 
+						else
+                        {
+                            destroyedResourcesCount++;
+                            DeleteResource(resource);
+                        }
 						
 					}
 				}
 			}
-		}
+        }
 
-		Vector3 scale = new Vector3(resourceSize,resourceSize * .5f,resourceSize);
+        if (true)
+        {
+            var resourcesToSpawn = (startResourceCount - (startResourceCount - destroyedResourcesCount));
+
+            for (int i = 0; i < resourcesToSpawn; i++)
+            {
+                SpawnResource();
+            }
+
+            //Debug.Log("Resources to spawn: " + resourcesToSpawn);
+        }
+
+        Vector3 scale = new Vector3(resourceSize,resourceSize * .5f,resourceSize);
 		for (int i=0;i<resources.Count;i++) {
 			matrices[i] = Matrix4x4.TRS(resources[i].position,Quaternion.identity,scale);
 		}
