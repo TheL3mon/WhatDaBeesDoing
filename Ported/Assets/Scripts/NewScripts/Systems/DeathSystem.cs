@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Jobs;
 
-public partial class BeeDeathSystem : SystemBase
+public partial class DeathSystem : SystemBase
 {
     private FieldData _fieldData;
     private int cleanUpLimit;
@@ -68,14 +68,6 @@ public partial class BeeDeathSystem : SystemBase
             beeStatuses = beeStatus,
             ecb = ecb.AsParallelWriter()
         };
-        //Dependency.Complete();
-
-
-        //clearResourceReferencesJobHandle.Complete();
-
-        //var deadBeeJobHandle = deadBeeJob.Schedule();
-        //var clearReferencesJobHandle = clearReferencesJob.Schedule(deadBeeJobHandle);
-        //var clearResourceReferencesJobHandle = clearResourceReferencesJob.Schedule(deadBeeJobHandle);
 
         var deadBeeJobHandle = deadBeeJob.Schedule();
         deadBeeJobHandle.Complete();
@@ -84,7 +76,6 @@ public partial class BeeDeathSystem : SystemBase
         var clearResourceReferencesJobHandle = clearResourceReferencesJob.Schedule();
         clearResourceReferencesJobHandle.Complete();
 
-        //Dependency = JobHandle.CombineDependencies(clearReferencesJobHandle, clearResourceReferencesJobHandle);
         Dependency = clearResourceReferencesJobHandle;
 
         if (deleteArr.Length > cleanUpLimit)
@@ -95,17 +86,8 @@ public partial class BeeDeathSystem : SystemBase
             };
             var deleteBeeJobHandle = deleteBeeJob.ScheduleParallel();
             deleteBeeJobHandle.Complete();
-            //Dependency = JobHandle.CombineDependencies(deleteBeeJobHandle, Dependency);
             Dependency = deleteBeeJobHandle;
         }
-
-        //Dependency = JobHandle.CombineDependencies(deadBeeJobHandle, clearReferencesJobHandle);
-
-        //var deadBeeJobHandle = deadBeeJob.Schedule(clearReferencesJobHandle);
-        ////var clearResourceReferencesJobHandle = clearReferencesResourceJob.Schedule(deadBeeJobHandle);
-
-        //Dependency = clearReferencesJobHandle;
-        // Dependency = JobHandle.CombineDependencies(deadBeeJobHandle, clearReferencesJobHandle);
 
         Dependency.Complete();
 
@@ -135,7 +117,6 @@ public partial struct DeadBeeJob : IJobEntity
             bee.dead = true;
 
             var targetResourceIndex = resources.IndexOf(bee.resourceTarget);
-            //Debug.Log("Bee dead.");
 
             if (targetResourceIndex != -1)
             {

@@ -1,6 +1,7 @@
 ﻿using Mono.Cecil;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -112,6 +113,26 @@ public partial class ResourceSystem : SystemBase
         ecb.Playback(EntityManager);
         ecb.Dispose();
     }
+    public static void InstantiateFallingResource(float3 position, EntityCommandBuffer ecb, Entity resourcePrefab)
+    {
+        var resourceEntity = ecb.Instantiate(resourcePrefab);
+
+        ecb.SetComponent(resourceEntity, new Translation
+        {
+            Value = position
+        }
+        );
+
+        var resource = new Resource();
+        resource.position = position;
+        resource.height = -1;
+        resource.holderTeam = -1;
+
+        var fallingResourceTag = new FallingResourceTag();
+
+        ecb.AddComponent(resourceEntity, resource);
+        ecb.AddComponent(resourceEntity, fallingResourceTag);
+    }
 
     [BurstCompile]
     public partial struct FallingResourceJob : IJobEntity
@@ -122,7 +143,6 @@ public partial class ResourceSystem : SystemBase
         public FieldData fd;
         public float dt;
         public NativeList<int> stackHeights;
-        //public NativeParallelHashMap<int, Resource> resourceHashMap;
 
         void Execute(Entity resourceEntity, ref Resource resource, in FallingResourceTag frt)
         {
@@ -157,7 +177,6 @@ public partial class ResourceSystem : SystemBase
                     var spawnBeeTag = new SpawnBeeTag();
                     spawnBeeTag.team = team;
                     ecb.AddComponent(resourceEntity, spawnBeeTag);
-                    //Debug.Log("spawnBeeTag added");
                 }
                 else
                 {
@@ -166,8 +185,6 @@ public partial class ResourceSystem : SystemBase
                     resource.position = pos;
                     resource.velocity = float3.zero;
                 }
-                //Debug.Log("Final pos: (" + resource.position + ") Grid coords: (" + resource.gridX + ", " + resource.gridY + ")");
-                //Debug.Log("Grid coords: " + resource.position);
 
                 ecb.RemoveComponent<FallingResourceTag>(resourceEntity);
             }
@@ -220,33 +237,16 @@ public partial class ResourceSystem : SystemBase
 
             for (int i = 0; i < rd.beesPerResource; i++)
             {
-                Entity newBee;
 
                 if (sbt.team == 0)
-                    newBee = ecb.Instantiate(entityIndex, yellowBee);
+                    SpawnSystem.InstantiateBee(entityIndex, ecb, position.Value, yellowBee);
                 else
-                    newBee = ecb.Instantiate(entityIndex, blueBee);
+                    SpawnSystem.InstantiateBee(entityIndex, ecb, position.Value, blueBee);
 
-                var newTranslation = new Translation
-                {
-                    Value = resource.position
-                };
-
-                var newScale = new NonUniformScale
-                {
-                    Value = new float3(1)
-                };
-
-                
-
-                ecb.SetComponent(entityIndex, newBee, newTranslation);
-                //ecb.SetComponent(newBee, new Bee { seed = seed });
-                ecb.AddComponent(entityIndex, newBee, newScale);
                 ecb.RemoveComponent<SpawnBeeTag>(entityIndex, resourceEntity);
 
             }
             ecb.DestroyEntity(entityIndex, resourceEntity); //Should be cached
-            //ParticleSystem.InstantiateBloodParticle(entityIndex, ecb, particlePrefab, positions[e].Value, new float3(1, -10, 1));
             for (int j = 0; j < 5; j++)
             {
                 ParticleSystem.InstantiateSpawnFlashParticle(entityIndex, ref ecb, particlePrefab, position.Value, new float3(1, -0.5f, 1), ref rand);

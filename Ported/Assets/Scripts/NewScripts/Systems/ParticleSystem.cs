@@ -33,11 +33,9 @@ public partial class ParticleSystem : SystemBase
         this.Enabled = true;
         timer = Time.DeltaTime;
 
-        // TEST SPAWN
         if (Input.GetKeyDown(KeyCode.F))
         {
             var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
-            // last property (velocity) should be set to -> bee.velocity * .35f
             SpawnParticles(ecb, new float3(5, 0, 0), ParticleType.Blood, new float3(1, -10, 1));
         }
 
@@ -58,17 +56,6 @@ public partial class ParticleSystem : SystemBase
 
     public static void InstantiateSpawnFlashParticle(int entityIndex, ref EntityCommandBuffer.ParallelWriter ecb, Entity particlePrefab, float3 position, float3 velocity, ref Random random, float _velocityJitter = 6f)
     {
-        //Particle particle = new Particle
-        //{
-        //    type = ParticleType.SpawnFlash,
-        //    position = position,
-        //    velocity = velocity + rand.NextFloat3Direction() * 5f,
-        //    size = rand.NextFloat(1f, 2f),
-        //    life = 1f,
-        //    lifeDuration = rand.NextFloat(.25f,.5f),
-        //    stuck = false
-        //};
-
         var dir = random.NextFloat3();
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         dir /= len;
@@ -93,16 +80,6 @@ public partial class ParticleSystem : SystemBase
 
     public static void InstantiateBloodParticle(int entityIndex, ref EntityCommandBuffer ecb, Entity particlePrefab, float3 position, float3 velocity, ref Random random, float _velocityJitter = 6f)
     {
-        //Particle particle = new Particle
-        //{
-        //    type = ParticleType.Blood,
-        //    position = position,
-        //    velocity = velocity + rand.NextFloat3Direction() * _velocityJitter,
-        //    size = rand.NextFloat(0.1f, 0.2f),
-        //    life = 1f,
-        //    lifeDuration = rand.NextFloat(3f, 5f),
-        //    stuck = false
-        //};
         var dir = random.NextFloat3();
         var len = Mathf.Sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z);
         dir /= len;
@@ -121,16 +98,14 @@ public partial class ParticleSystem : SystemBase
             stuck = false
         };
 
-        UnityEngine.Color color = UnityEngine.Color.red;
+        UnityEngine.Color color = Color.red;
 
         InstantiateParticle(entityIndex, ecb, particle, color, particlePrefab);
     }
 
     public static void InstantiateParticle(int entityIndex, EntityCommandBuffer.ParallelWriter ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
     {
-        //Debug.Log("BOFA DEEZ PARTICLE NUTS");
         var newParticle = ecb.Instantiate(entityIndex, particlePrefab);
-        //var newParticle = ecb.Instantiate(particlePrefab);
 
         var newTranslation = new Translation
         {
@@ -171,9 +146,7 @@ public partial class ParticleSystem : SystemBase
 
     public static void InstantiateParticle(int entityIndex, EntityCommandBuffer ecb, Particle particle, UnityEngine.Color color, Entity particlePrefab)
     {
-        //Debug.Log("BOFA DEEZ PARTICLE NUTS");
         var newParticle = ecb.Instantiate(particlePrefab);
-        //var newParticle = ecb.Instantiate(particlePrefab);
 
         var newTranslation = new Translation
         {

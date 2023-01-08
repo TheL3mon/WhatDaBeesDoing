@@ -41,7 +41,10 @@ public partial class BeeMovementSystem : SystemBase
         var aliveArr = aliveQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
         var deadQuery = GetEntityQuery(ComponentType.ReadOnly<DeadTag>());
-        var deadArr = deadQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
+        var deadArr = deadQuery.ToEntityArray(World.UpdateAllocator.ToAllocator); ;
+
+        var beeQuery = GetEntityQuery(ComponentType.ReadOnly<Bee>());
+        var beeArr = beeQuery.ToEntityArray(World.UpdateAllocator.ToAllocator);
 
         var positions = GetComponentDataFromEntity<Translation>(true);
         var ecb = new EntityCommandBuffer(World.UpdateAllocator.ToAllocator);
@@ -65,13 +68,11 @@ public partial class BeeMovementSystem : SystemBase
 
         Debug.Log("Number of bees: " + (blueArr.Length + yellowArr.Length) + ", Blue: " + blueArr.Length + " Yellow: " + yellowArr.Length + ", Dead: " + deadArr.Length);
 
-        //Dynamic buffers is an option
         blueArr.Dispose();
         yellowArr.Dispose();
         resourceArr.Dispose();
 
         ecb.Playback(World.EntityManager);
-
         ecb.Dispose();
     }
 }

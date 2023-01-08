@@ -1,10 +1,7 @@
-using JetBrains.Annotations;
-using TreeEditor;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine;
 using Random = Unity.Mathematics.Random;
@@ -241,7 +238,6 @@ public partial struct TargetingJob : IJobEntity
         {
             if (status.dead == true)
             {
-                //Debug.Log("resource is dead");
                 bee.resourceTarget = Entity.Null;
                 return;
             }
@@ -253,7 +249,6 @@ public partial struct TargetingJob : IJobEntity
             if (stackHeight != resourceHeight)
             {
                 {
-                    //ecb.RemoveComponent<CollectingTag>(entityIndex, e);
                     bee.collectingResource = false;
                     bee.resourceTarget = Entity.Null;
                     return;
@@ -278,7 +273,6 @@ public partial struct TargetingJob : IJobEntity
                 float sqrDist = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
                 if (sqrDist > beeData.grabDistance * beeData.grabDistance)
                 {
-                    //Debug.Log("Moving towards resource");
                     bee.velocity += (delta * (beeData.chaseForce * dt / Mathf.Sqrt(sqrDist)));
                 }
                 else

@@ -122,6 +122,8 @@ public class BeeManager : MonoBehaviour {
 
 		float deltaTime = Time.fixedDeltaTime;
 
+		int deadBeeCount = 0;
+
 		for (int i = 0; i < bees.Count; i++) {
 			Bee bee = bees[i];
 			bee.isAttacking = false;
@@ -207,6 +209,7 @@ public class BeeManager : MonoBehaviour {
 					}
 				}
 			} else {
+				deadBeeCount++;
 				if (Random.value<(bee.deathTimer-.5f)*.5f) {
 					ParticleManager.SpawnParticle(bee.position,ParticleType.Blood,Vector3.zero);
 				}

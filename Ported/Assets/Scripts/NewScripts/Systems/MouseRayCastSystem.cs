@@ -122,7 +122,7 @@ public partial class MouseRayCastSystem : SystemBase
                 markerPos.Value.y -= 1;
             }
 
-            var resourceSpawn = new SpawnJobResource
+            var resourceSpawn = new SpawnResourceJob
             {
                 ecb = ecb,
                 resourcePrefab = _resourcePrefab,
