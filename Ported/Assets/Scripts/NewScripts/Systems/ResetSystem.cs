@@ -8,7 +8,7 @@ public partial class ResetSystem : SystemBase
 {
     protected override void OnUpdate()
     {
-        if (Input.GetKeyDown(KeyCode.W))
+        if (Input.GetKeyDown(KeyCode.R))
         {
             World.EntityManager.CompleteAllJobs();
             World.Dispose();
